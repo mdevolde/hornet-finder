@@ -66,6 +66,7 @@ ACTIONS = {
     'group.member_removed': "Member removed from a group",
     'group.admin_named': "Group administrator named",
     'group.admin_dismissed': "Group administrator dismissed",
+    'notification.sent': "Push notification sent to a group or a member",
     # Invitations
     'invitation.sent': "Group invitation sent",
     'invitation.reminded': "Group invitation reminder sent",

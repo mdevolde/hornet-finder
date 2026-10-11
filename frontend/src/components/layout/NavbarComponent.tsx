@@ -18,6 +18,7 @@ import { useUserPermissions } from '../../hooks/useUserPermissions';
 import { UserAvatar } from '../common';
 import { useAvatarUrl } from '../../hooks/useAvatarUrl';
 import { APP_VERSION, IS_RELEASE } from '../../utils/version';
+import { releasePushDevice } from '../../hooks/usePushRebind';
 import { openInstallSheet, useInstallState } from '../../utils/installPrompt';
 import { openHelp } from '../../help/helpStore';
 import { ACTION_ICONS } from '../../utils/icons';
@@ -205,9 +206,9 @@ export default function NavbarComponent() {
                 </Button>
                 <Button
                   variant="outline-secondary"
-                  onClick={() => void auth.signoutRedirect(
+                  onClick={() => void releasePushDevice().then(() => auth.signoutRedirect(
                     { post_logout_redirect_uri: window.location.origin }
-                  )}
+                  ))}
                   className="icon-button ms-auto"
                   aria-label="Déconnexion"
                   title="Déconnexion"

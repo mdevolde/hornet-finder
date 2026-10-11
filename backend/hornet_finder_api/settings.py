@@ -281,3 +281,11 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Velutina <contact@vel
 # Keycloak email theme (auth/themes/velutina/email), mounted read-only: the
 # API's HTML emails use its layout (see hornet/emails.py)
 EMAIL_THEME_DIR = os.environ.get('EMAIL_THEME_DIR', '/app/email-theme')
+
+# Web Push (see hornet/push.py). Keys: `python manage.py generate_vapid_keys`.
+# Unset, notifications are off and the app does not offer them.
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', 'mailto:contact@velutina.ovh')
+# Send inline instead of in a background thread (tests)
+PUSH_SYNC = False

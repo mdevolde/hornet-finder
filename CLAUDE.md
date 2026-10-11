@@ -23,6 +23,7 @@
 - **Versioning**: the git tag `vX.Y.Z` (semver) is the only source of the version. Log user-visible changes under `[Unreleased]` in `CHANGELOG.md` in the same commit; `./release.sh major|minor|patch [--push]` (dev worktree, `devel`) cuts the release. The version reaches the frontend as `VITE_APP_VERSION` (`lib/version.sh`, shown in the menu). See `doc/VERSIONING.md`
 - **Realm export**: `./export-realm.sh [-n]` refreshes `auth/realm-export.json` (prod) or `auth/realm-export-dev.json` (dev) from the running realm, according to `APP_ENV`. Uses `flow-admin` (`FLOW_ADMIN_SECRET`, role `manage-realm`, nothing new to create), refuses any export with an unmasked secret or a real user; `-n` shows the diff without writing. Review and commit the result
 - **Admin 2FA**: holders of `mfa-required` (carried by `admin`) must use an OTP with a password. `./enforce-admin-2fa.sh [--apply]` sets it up on an existing realm (dry run by default, idempotent, `flow-admin`); the realm export only feeds a new realm. It needs the custom `browser-passkey` flow bound as the realm browser flow. See `doc/prod-migrations/0015-keycloak-admin-2fa.md`
+- **Notifications (Web Push)**: group administrators and platform admins notify a group or one member from the members list; every user turns them on per device from the profile dialog. VAPID keys per environment (`manage.py generate_vapid_keys`, `VAPID_*` in `.env`); without them the feature is off. See `doc/NOTIFICATIONS.md`
 - **Prod migrations**: any change needing more than `./deploy.sh` in prod gets a note in `doc/prod-migrations/NNNN-slug.md` (`status: pending`, template in its `README.md`), written in dev and committed with the change. Prod applies pending notes after merging `devel`, marks them `status: applied (date)`, never deletes them. This is the only channel between the dev and prod worktrees: never edit the other worktree, never read its `.env`
 - **ZFS**: optional backend selected by `ZFS_PARENT` in `.env`; `./zfs-snapshot.sh create|list|clean|delete|restore`. ZFS logic lives ONLY in `lib/zfs.sh`, `storage-init.sh` and `zfs-snapshot.sh`; keep it out of every other script
 
@@ -53,7 +54,7 @@
 ## Frontend Architecture
 - **Tech Stack**: React 19 + TypeScript + Vite + Bootstrap + Leaflet maps + Redux Toolkit
 - **Development vs Production**: Vite dev server (`:5173`) only used in dev with volume-mounted frontend directory for hot reload. Production serves pre-built static files via Nginx
-- **PWA Features**: offline app shell and auto-update via `vite-plugin-pwa` (Workbox `generateSW`)
+- **PWA Features**: offline app shell and auto-update via `vite-plugin-pwa` (Workbox `injectManifest`: the worker is `frontend/src/sw.ts`, which also shows Web Push notifications, see `doc/NOTIFICATIONS.md`)
 - **Auth Flow**: `react-oidc-context` over the app's single `UserManager` (`utils/oidc.ts`)
 - **Key Dependencies**: `leaflet`/`react-leaflet` (maps), `jwt-decode`, `axios`, `bootstrap`/`react-bootstrap`
 - **Admin-only pages** are lazy-loaded (`lazy()` in `App.tsx`, e.g. `pages/admin/AuditTrail.tsx`) so they stay out of everyone else's bundle; their filters live in the address (`useSearchParams`), so a history is a link and Back restores the previous filters

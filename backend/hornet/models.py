@@ -761,3 +761,72 @@ class StatExportJob(models.Model):
 
     def __str__(self):
         return f"Export {self.statistic} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
+class PushSubscription(models.Model):
+    """
+    A browser (or installed PWA) that agreed to receive Web Push messages for a
+    user. One user may have several (phone, desktop); the `endpoint` identifies
+    the browser at its push service (FCM, Mozilla, Apple) and is unique. The
+    keys encrypt the payload for that browser only.
+    """
+
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    # Short readable client ("iOS · Safari"), derived from the user agent when subscribing
+    device = models.CharField(max_length=64, blank=True, default='')
+    installed = models.BooleanField(default=False)  # subscribed from the installed PWA
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user_id} · {self.device}'
+
+
+class PushNotification(models.Model):
+    """
+    One message an administrator sent, to a group or to one of its members. The
+    text is kept so the diagnostics can show what went out, and the rows of the
+    last hour limit how many messages a sender may send.
+    """
+
+    HOURLY_LIMIT = 10
+    TITLE_MAX = 60
+    BODY_MAX = 200
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sender = models.UUIDField(db_index=True)  # Keycloak GUID, not a foreign key: outlives the account
+    group_path = models.CharField(max_length=255)
+    recipient = models.UUIDField(null=True, blank=True)  # set for a message to one member
+    title = models.CharField(max_length=TITLE_MAX)
+    body = models.CharField(max_length=BODY_MAX)
+    recipients_count = models.PositiveIntegerField(default=0)  # people reached by the roster
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class PushDelivery(models.Model):
+    """
+    The attempt to push one notification to one device. `status` is the HTTP
+    code answered by the push service (201 accepted; 404/410 the subscription
+    is gone), 0 when it could not be reached. `received_at` is set by the
+    device itself when its service worker shows the message, which measures
+    the delay end to end. Its `id` travels in the payload and is the only
+    credential of the acknowledgement: the service worker has no session.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    notification = models.ForeignKey(PushNotification, on_delete=models.CASCADE, related_name='deliveries')
+    # Null once the subscription is purged; `device` and `installed` stay, so the diagnostics remain readable
+    subscription = models.ForeignKey('PushSubscription', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='deliveries')
+    device = models.CharField(max_length=64, blank=True, default='')
+    installed = models.BooleanField(default=False)
+    user = models.UUIDField(db_index=True)
+    status = models.PositiveSmallIntegerField(null=True, blank=True)  # null while not sent
+    error = models.CharField(max_length=200, blank=True, default='')
+    sent_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)

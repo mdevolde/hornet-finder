@@ -105,6 +105,17 @@ The emails use the layout of the Keycloak email theme (`auth/themes/velutina/ema
 - `GET /api/me/group-invitations/` - Pending invitations of the caller
 - `POST /api/me/group-invitations/{id}/accept/`, `POST /api/me/group-invitations/{id}/decline/` - Answer one; the new membership shows in the next token
 
+### Push notifications
+
+Web Push to the devices of users (installed PWA or browser), sent by group administrators and platform admins; see `hornet/push.py` and `hornet/push_views.py`. VAPID keys (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, from `manage.py generate_vapid_keys`) are required: without them `config` answers `enabled: false` and `subscribe`, `send` and `test` answer 503. Sending runs in a background thread after the request; each device gets a `PushDelivery` with the push service's answer, and its service worker acknowledges the display.
+
+- `GET /api/push/config/` - `enabled` and the `public_key` a browser subscribes with
+- `GET|POST|DELETE /api/push/subscriptions/` - The caller's devices; `POST` takes the browser's subscription (`endpoint`, `keys.p256dh`, `keys.auth`) and `installed`; `DELETE ?endpoint=` or `?id=` forgets one. A subscription of a push service that answers 404 or 410 is purged
+- `POST /api/push/test/` - A notification to the caller's own devices (one per 30 s). Errors carry a `code`: `no_device` (409), `too_soon` (429)
+- `POST /api/push/send/` - `group_path`, `title` (≤ 60), `body` (≤ 200), and optionally `guid` for one member. Same rights as the roster of the group (`/api/groups/members/`): administrators of the group, platform admins anywhere (`/trappers` holds every account). The sender is never addressed. At most 10 per hour per sender. Answers 202 with `recipients`, `reached` (with a device) and `devices`. Errors carry a `code`: `no_recipient` (409), `rate_limited` (429)
+- `POST /api/push/ack/{delivery id}/` - No session: the device tells its service worker showed the message; the unguessable delivery id (in the payload) is the credential
+- `GET /api/push/deliveries/` - Platform admins: the last 100 deliveries (device, push service status, seconds until the device acknowledged)
+
 ### Audit trail
 
 Business actions (reports, edits, deletions, hand-overs, sharings, delegations, journal entries, QR codes, group memberships, invitations, statistics exports and their downloads) recorded by the `audit` app, in the transaction of the change, append-only (a database trigger refuses `UPDATE`, and `DELETE` outside the retention purge). Platform admins only, read-only. See `doc/AUDIT_TRAIL.md`.

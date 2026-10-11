@@ -23,6 +23,13 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ### Added
 - Release script: `release.sh` now accepts short argument (`-n`) for dry run.
+- Notifications: a group administrator writes a push notification to a member or to the
+  whole group of an association, and a platform admin to anyone (from the members list,
+  "Notifier"). Everyone turns notifications on or off per device in their profile, with a
+  test button; on iPhone and iPad the app must be added to the home screen first (iOS
+  16.4 or later). Platform admins follow the deliveries, device by device, in
+  Administration → Notifications. Needs VAPID keys in `.env` (prod note 0022). The service
+  worker is now written by hand (`injectManifest`).
 - Map: it reopens where you left it (centre and zoom, on this device, for 30 days after
   the last move). Only a drag by hand is remembered, never a locate fix or a jump to an
   object. "Position par défaut" in the layers sheet forgets it and recentres on the

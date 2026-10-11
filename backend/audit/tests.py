@@ -91,6 +91,7 @@ AUDITED = {
     ('group', 'member', 'delete'): 'group.member_removed',
     ('group', 'member_admin', 'put'): 'group.admin_named',
     ('group', 'dismiss_admin', 'delete'): 'group.admin_dismissed',
+    ('push', 'send', 'post'): 'notification.sent',
     ('group-invitation', 'create', 'post'): 'invitation.sent',
     ('group-invitation', 'remind', 'post'): 'invitation.reminded',
     ('group-invitation', 'destroy', 'delete'): 'invitation.cancelled',
@@ -99,6 +100,10 @@ AUDITED = {
 }
 
 NOT_AUDITED = {
+    ('push', 'subscribe', 'post'): "a device's own subscription, not a business action",
+    ('push', 'unsubscribe', 'delete'): "a device's own subscription, not a business action",
+    ('push', 'test', 'post'): "a message to oneself",
+    ('push', 'ack', 'post'): "a device's receipt, sent by the service worker",
     ('tag', 'sheet', 'post'): "signs a link to print existing tags: a read",
     ('tagadmin', 'sheet', 'post'): "signs a link to print existing tags: a read",
 }

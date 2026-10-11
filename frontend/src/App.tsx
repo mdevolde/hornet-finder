@@ -4,7 +4,7 @@ import { Container, Alert, Spinner } from 'react-bootstrap'
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context';
-import { Home, MapPage, Nests, Traps, Apiaries, AdminIndex, TrapTypesAdmin, SpeciesAdmin, TagsAdmin, ArchivingAdmin, GroupAdmin, PrivacyPolicy, DataDeletion, Invitations } from './pages';
+import { Home, MapPage, Nests, Traps, Apiaries, AdminIndex, TrapTypesAdmin, SpeciesAdmin, TagsAdmin, ArchivingAdmin, GroupAdmin, NotificationsAdmin, PrivacyPolicy, DataDeletion, Invitations } from './pages';
 import { ErrorBoundary, RequireRole } from './components/common';
 import { PageErrorFallback } from './components/layout';
 import DocsRedirect from './help/DocsRedirect';
@@ -13,6 +13,7 @@ import { initIOSViewportFix } from './utils/iosViewportFix';
 import { useUrlCleaner } from './utils/urlCleaner';
 import { useSessionGuard } from './hooks/useSessionGuard';
 import { useReachabilityMonitor } from './hooks/useReachability';
+import { usePushRebind } from './hooks/usePushRebind';
 import { ADMIN, APP_ROLES, BEEKEEPER, TRAPPER } from './utils/roles';
 
 // The statistics are loaded on demand: they stay out of the first load of the PWA
@@ -35,6 +36,9 @@ function App() {
 
   // Probes whether the server is reachable (banner under the navbar)
   useReachabilityMonitor();
+
+  // The notifications of this device follow whoever is signed in
+  usePushRebind(auth.isAuthenticated);
 
   // Initialiser la correction iOS pour le viewport
   useEffect(() => {
@@ -130,6 +134,10 @@ function App() {
       <Route
         path="/admin/archiving"
         element={<RequireRole roles={['admin']}><ArchivingAdmin /></RequireRole>}
+      />
+      <Route
+        path="/admin/notifications"
+        element={<RequireRole roles={['admin']}><NotificationsAdmin /></RequireRole>}
       />
       <Route
         path="/admin/group"
