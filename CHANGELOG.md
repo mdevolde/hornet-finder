@@ -10,6 +10,15 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+### Security
+- Django 6.1.1 → 6.1.2: security release (CVE-2026-87890, bytes in spatial
+  lookups; CVE-2026-15830, WKB geometry collection limits; CVE-2026-84429 and
+  CVE-2026-77050, header parsing and memory exhaustion; CVE-2026-87975, model
+  formsets).
+- Django REST framework 3.18.1 → 3.18.3: hardened content negotiation against
+  large `Accept` headers (GHSA-33wh-fxxf-88vv), non-text charsets refused
+  (GHSA-3547-9m27-7rxg); 3.18.3 fixes a regression of 3.18.2.
+
 ### Added
 - Map: it reopens where you left it (centre and zoom, on this device, for 30 days after
   the last move). Only a drag by hand is remembered, never a locate fix or a jump to an
