@@ -44,6 +44,7 @@ export function toFilters(params: URLSearchParams): AuditFilters {
     source: (params.get('source') as AuditSource | null) ?? undefined,
     request: params.get('request') ?? undefined,
     q: params.get('q') ?? undefined,
+    order: params.get('order') === 'asc' ? 'asc' : undefined,
   };
   if (period && 'days' in period) {
     filters.since = new Date(Date.now() - period.days * 24 * 3600 * 1000).toISOString();

@@ -545,14 +545,40 @@ class ReadApiTests(ApiTestCase):
         self.assertTrue(by_action['trap.updated']['actor_deleted'])
         self.assertEqual(by_action['trap.updated']['domain'], 'trap')
 
-    def test_cursor_pagination(self):
-        for index in range(5):
-            self._record(self.owner_user, 'nest.reported', ('nest', index))
+    def _walk(self, client, query):
+        """Every page of the list, as the ids in the order they came."""
+        ids, url = [], f'/api/audit/events/?{query}'
+        while url:
+            data = client.get(url).data
+            ids += [row['id'] for row in data['results']]
+            url = data['next']
+        return ids
+
+    def test_pagination_keeps_order_across_equal_timestamps(self):
+        # Events of one request, or rebuilt in a batch, share their timestamp:
+        # the pages must neither repeat nor skip nor reorder them
+        moment = timezone.now() - timedelta(hours=1)
+        tied = [self._record(self.owner_user, 'nest.reported', ('nest', i), occurred_at=moment).id for i in range(7)]
+        older = self._record(self.owner_user, 'nest.reported', ('nest', 98), occurred_at=moment - timedelta(minutes=1)).id
+        newer = self._record(self.owner_user, 'nest.reported', ('nest', 99), occurred_at=moment + timedelta(minutes=1)).id
         client = self.as_user(self.admin_user)
-        first = client.get('/api/audit/events/?page_size=3').data
-        self.assertEqual([r['target_id'] for r in first['results']], ['4', '3', '2'])
-        second = client.get(first['next']).data
-        self.assertEqual([r['target_id'] for r in second['results']], ['1', '0'])
+
+        newest_first = [newer] + sorted(tied, reverse=True) + [older]
+        self.assertEqual(self._walk(client, 'page_size=3'), newest_first)
+        self.assertEqual(self._walk(client, 'page_size=2&order=asc'), list(reversed(newest_first)))
+        self.assertEqual(client.get('/api/audit/events/?cursor=nope').status_code, 400)
+
+    def test_csv_export_follows_the_order(self):
+        first = self._record(self.owner_user, 'nest.reported', ('nest', 1))
+        second = self._record(self.owner_user, 'nest.reported', ('nest', 2))
+        client = self.as_user(self.admin_user)
+        for order, expected in (('asc', ['1', '2']), ('desc', ['2', '1'])):
+            link = client.post('/api/audit/events/export-link/', {'filters': {'order': order}}, format='json').data
+            text = b''.join(APIClient().get(link['url']).streaming_content).decode('utf-8')
+            rows = [row for row in csv.reader(io.StringIO(text.lstrip('\ufeff')), delimiter=';')][1:]
+            self.assertEqual([row[7] for row in rows if row[1] == 'nest.reported'], expected)
+        self.assertLess(first.id, second.id)
+
 
     def test_catalogue(self):
         data = self.as_user(self.admin_user).get('/api/audit/events/catalogue/').data

@@ -66,6 +66,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   addresses open the home page with the help panel on the module concerned.
 
 ### Fixed
+- Audit trail: events sharing the same time (one request, a rebuilt batch) were
+  repeated or shown out of order from one page to the next; the list is now
+  strictly newest first, and an icon reverses it (oldest first), the CSV export
+  included.
 - Deleting a trap type still in use no longer removes its photo.
 
 ## [1.3.0] - 2026-10-09

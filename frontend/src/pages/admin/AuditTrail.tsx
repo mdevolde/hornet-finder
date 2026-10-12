@@ -106,6 +106,7 @@ export default function AuditTrail() {
     setParams(updated);
   };
 
+  const oldestFirst = params.get('order') === 'asc';
   const chips = filterChips(params, actionLabel, (domain) => DOMAINS[domain]?.label ?? domain);
   const activeCount = chips.length;
 
@@ -122,6 +123,14 @@ export default function AuditTrail() {
                 icon={ACTION_ICONS.filters}
                 label={activeCount ? `Filtres (${activeCount})` : 'Filtres'}
                 onClick={() => setSheet('filters')}
+              />
+              <IconButton
+                // Filled while the order is reversed, so the state shows at a glance
+                variant={oldestFirst ? 'secondary' : 'outline-secondary'}
+                icon={oldestFirst ? 'sort-up' : 'sort-down'}
+                label={oldestFirst ? "Plus anciens d'abord" : "Plus récents d'abord"}
+                title={oldestFirst ? 'Plus anciens en haut : toucher pour inverser' : 'Plus récents en haut : toucher pour inverser'}
+                onClick={() => change({ order: oldestFirst ? null : 'asc' })}
               />
               <IconButton
                 variant="outline-secondary"

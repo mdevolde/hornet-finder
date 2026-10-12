@@ -5,6 +5,7 @@ Names of the actors are resolved from Keycloak when the trail is read (and
 cached a few minutes), never stored with the events.
 """
 
+import base64
 import csv
 import datetime
 import json
@@ -14,7 +15,7 @@ from types import SimpleNamespace
 from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
-from django.db.models import TextField
+from django.db.models import Q, TextField
 from django.db.models.functions import Cast
 from django.http import HttpResponse, StreamingHttpResponse
 from django.urls import reverse
@@ -25,8 +26,9 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_sche
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import CursorPagination
+from rest_framework.pagination import BasePagination
 from rest_framework.response import Response
+from rest_framework.utils.urls import replace_query_param
 
 from hornet_finder_api import utils as keycloak
 from hornet_finder_api.authentication import HasAnyRole, JWTBearerAuthentication
@@ -105,11 +107,65 @@ class AuditEventSerializer(serializers.ModelSerializer):
         return {guid: names.get(guid, {'name': None, 'deleted': False}) for guid in people_of(event)}
 
 
-class AuditPagination(CursorPagination):
-    ordering = ('-occurred_at', '-id')
+def is_ascending(params) -> bool:
+    """`order=asc`: oldest first; newest first otherwise."""
+    return params.get('order') == 'asc'
+
+
+class AuditPagination(BasePagination):
+    """
+    Keyset pagination on (`occurred_at`, `id`), in either direction.
+
+    DRF's CursorPagination positions its cursor on the first ordering field
+    only: events sharing a timestamp (a request, a rebuilt batch) then came
+    back twice or out of order across pages. The cursor here is the last
+    event shown, so ties are broken by the id.
+    """
+
     page_size = 50
-    page_size_query_param = 'page_size'
     max_page_size = 200
+
+    def paginate_queryset(self, queryset, request, view=None):
+        self.request = request
+        ascending = is_ascending(request.query_params)
+        try:
+            size = int(request.query_params.get('page_size') or self.page_size)
+        except ValueError:
+            size = self.page_size
+        size = max(1, min(size, self.max_page_size))
+        cursor = request.query_params.get('cursor')
+        if cursor:
+            moment, pk = self._decode(cursor)
+            after = 'gt' if ascending else 'lt'
+            queryset = queryset.filter(
+                Q(**{f'occurred_at__{after}': moment}) | Q(occurred_at=moment, **{f'id__{after}': pk}))
+        rows = list(queryset.order_by(*ordering(ascending))[:size + 1])
+        self.next_cursor = self._encode(rows[size - 1]) if len(rows) > size else None
+        return rows[:size]
+
+    def get_paginated_response(self, data):
+        next_url = None
+        if self.next_cursor:
+            next_url = replace_query_param(self.request.build_absolute_uri(), 'cursor', self.next_cursor)
+        return Response({'next': next_url, 'previous': None, 'results': data})
+
+    @staticmethod
+    def _encode(event) -> str:
+        raw = f"{event.occurred_at.isoformat()}|{event.pk}"
+        return base64.urlsafe_b64encode(raw.encode()).decode().rstrip('=')
+
+    @staticmethod
+    def _decode(cursor: str):
+        try:
+            raw = base64.urlsafe_b64decode(cursor + '=' * (-len(cursor) % 4)).decode()
+            moment, pk = raw.rsplit('|', 1)
+            return datetime.datetime.fromisoformat(moment), int(pk)
+        except (ValueError, UnicodeDecodeError):
+            raise ValidationError({'cursor': "Invalid cursor."})
+
+
+def ordering(ascending: bool):
+    return ('occurred_at', 'id') if ascending else ('-occurred_at', '-id')
 
 
 def _split(value):
@@ -145,6 +201,8 @@ FILTER_PARAMETERS = [
     OpenApiParameter('source', OpenApiTypes.STR, enum=[c[0] for c in AuditEvent.SOURCE_CHOICES]),
     OpenApiParameter('request', OpenApiTypes.STR, description="Events of one request (`request_id`)"),
     OpenApiParameter('q', OpenApiTypes.STR, description="Text searched in the details of the events"),
+    OpenApiParameter('order', OpenApiTypes.STR, enum=['desc', 'asc'],
+                     description="`desc` (default): newest first; `asc`: oldest first"),
 ]
 
 
@@ -182,7 +240,7 @@ def filter_events(queryset, params):
     if text:
         queryset = queryset.annotate(changes_text=Cast('changes', TextField())).filter(
             changes_text__icontains=text)
-    return queryset
+    return queryset.order_by(*ordering(is_ascending(params)))
 
 
 class AuditEventViewSet(viewsets.ReadOnlyModelViewSet):

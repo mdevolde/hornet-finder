@@ -120,8 +120,10 @@ référentiels, membres de groupes, téléchargements passés.
 `/admin/audit`, carte « Journal d'audit » d'Administration, admins de plateforme
 seulement (page chargée à la demande, hors du bundle des autres rôles).
 
-- Liste du plus récent au plus ancien, groupée par jour, « Plus d'événements »
-  pour la page suivante (curseur). Les filtres actifs sont des puces à retirer.
+- Liste du plus récent au plus ancien (une icône de tri inverse l'ordre,
+  `order=asc` dans l'adresse), groupée par jour, « Plus d'événements » pour la
+  page suivante. Le curseur porte sur le couple (date, n°) : des événements de
+  même date (une requête, un lot reconstitué) ne sont ni répétés ni mélangés. Les filtres actifs sont des puces à retirer.
 - Filtres (`BottomSheet`, appliqués au fil du choix) : période (24 h, 7 jours,
   30 jours, tout, dates), domaines, action, personne (recherche Keycloak par nom
   ou email), source, texte dans les détails. Ils vivent dans l'adresse :

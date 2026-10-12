@@ -82,7 +82,8 @@ export default function AdminDoc() {
         </p>
         <p>
           <strong>Consulter</strong> (administrateurs) : <em>Administration → Journal d&apos;audit</em>,
-          du plus récent au plus ancien, filtré par période, domaine, action, personne, source ou texte.
+          du plus récent au plus ancien (l&apos;icône de tri inverse l&apos;ordre), filtré par période,
+          domaine, action, personne, source ou texte.
           L&apos;icône <i className="bi bi-clock-history" aria-hidden="true" /> <em>Historique</em> d&apos;une
           fiche (nid, frelon, rucher, piège) ouvre tout ce qui concerne l&apos;objet ; depuis un
           événement, on passe aux actions de la même personne ou de la même requête. L&apos;export

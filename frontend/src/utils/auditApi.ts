@@ -56,6 +56,8 @@ export interface AuditFilters {
   source?: AuditSource | '';
   request?: string;
   q?: string;
+  /** Oldest first; newest first when absent */
+  order?: 'asc';
 }
 
 export interface AuditActor {
