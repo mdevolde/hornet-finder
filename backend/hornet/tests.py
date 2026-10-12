@@ -1534,8 +1534,12 @@ class SpeciesAdminTests(TrapTestCase):
         response = SpeciesViewSet.as_view({'post': 'create'})(request)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['slug'], 'vespa-orientalis')
-        # A new species goes to the end of the list
-        self.assertEqual(response.data['sort_order'], Species.objects.count() - 1)
+        # A new species goes to the end of the list. The seeded sort_order values
+        # are spaced (10, 20, ... 999), so "end" is the previous maximum + 1
+        others = Species.objects.exclude(slug='vespa-orientalis')
+        self.assertEqual(response.data['sort_order'],
+                         max(others.values_list('sort_order', flat=True)) + 1)
+        self.assertEqual(Species.objects.last().slug, 'vespa-orientalis')
 
     def _reorder(self, user, ids):
         request = self.factory.post('/species/reorder/', {'ids': ids}, format='json')
