@@ -1,4 +1,5 @@
 import { isInstalledPwa } from './pwa';
+import { BADGE_CACHE } from './pushBadge';
 
 /**
  * Web Push in this browser. The server side is `utils/pushApi.ts`; the worker
@@ -76,4 +77,18 @@ export async function unsubscribeThisDevice(): Promise<string | null> {
 
 export function isStandalone(): boolean {
   return isInstalledPwa();
+}
+
+/**
+ * The app is open: whatever it was notified about is now seen. Clears the icon
+ * badge and its count, and closes the notifications still in the tray.
+ */
+export async function clearPushBadge(): Promise<void> {
+  try { await navigator.clearAppBadge?.(); } catch { /* not supported, or no permission */ }
+  try { await caches.delete(BADGE_CACHE); } catch { /* storage unavailable */ }
+  if (pushSupport() !== 'ok') return;
+  try {
+    const worker = await registration();
+    (await worker?.getNotifications())?.forEach((notification) => notification.close());
+  } catch { /* nothing to close */ }
 }

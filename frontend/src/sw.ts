@@ -11,6 +11,7 @@ import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { NetworkFirst, NetworkOnly } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
+import { BADGE_CACHE, BADGE_KEY } from './utils/pushBadge'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -61,6 +62,22 @@ function readPayload(event: PushEvent): PushPayload {
   }
 }
 
+/** One more unseen notification: counted in the cache, then drawn on the app icon. */
+async function addToBadge(): Promise<void> {
+  try {
+    // The app is in front: the person sees the message arrive, nothing to count
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    if (windows.some((client) => client.visibilityState === 'visible')) return
+
+    const cache = await caches.open(BADGE_CACHE)
+    const previous = await cache.match(BADGE_KEY)
+    const count = (previous ? parseInt(await previous.text(), 10) || 0 : 0) + 1
+    await cache.put(BADGE_KEY, new Response(String(count)))
+    // Not available everywhere (Android draws its own dot), and refused without the permission
+    if ('setAppBadge' in self.navigator) await self.navigator.setAppBadge(count)
+  } catch { /* the badge is a convenience: never lose the notification over it */ }
+}
+
 self.addEventListener('push', (event) => {
   const payload = readPayload(event)
   event.waitUntil((async () => {
@@ -71,6 +88,7 @@ self.addEventListener('push', (event) => {
       icon: import.meta.env.VITE_APP_ICON,
       data: { url: payload.url || '/' },
     })
+    await addToBadge()
     // Tells the server the device showed it, to measure the delay. Best effort:
     // the notification does not depend on it, and the id is the only credential
     if (payload.id) {

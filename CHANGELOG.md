@@ -28,7 +28,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   "Notifier"). Everyone turns notifications on or off per device in their profile, with a
   test button; on iPhone and iPad the app must be added to the home screen first (iOS
   16.4 or later). Platform admins follow the deliveries, device by device, in
-  Administration → Notifications. Needs VAPID keys in `.env` (prod note 0022). The service
+  Administration → Notifications. The app icon shows a badge counting the notifications
+  received since the app was last opened (iPhone and desktop; Android draws its own dot).
+  Needs VAPID keys in `.env` (prod note 0022). The service
   worker is now written by hand (`injectManifest`).
 - Map: it reopens where you left it (centre and zoom, on this device, for 30 days after
   the last move). Only a drag by hand is remembered, never a locate fix or a jump to an

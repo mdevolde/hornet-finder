@@ -13,7 +13,7 @@ import { initIOSViewportFix } from './utils/iosViewportFix';
 import { useUrlCleaner } from './utils/urlCleaner';
 import { useSessionGuard } from './hooks/useSessionGuard';
 import { useReachabilityMonitor } from './hooks/useReachability';
-import { usePushRebind } from './hooks/usePushRebind';
+import { usePushBadgeReset, usePushRebind } from './hooks/usePushRebind';
 import { ADMIN, APP_ROLES, BEEKEEPER, TRAPPER } from './utils/roles';
 
 // The statistics are loaded on demand: they stay out of the first load of the PWA
@@ -39,6 +39,8 @@ function App() {
 
   // The notifications of this device follow whoever is signed in
   usePushRebind(auth.isAuthenticated);
+  // The icon badge counts what arrived while the app was away
+  usePushBadgeReset();
 
   // Initialiser la correction iOS pour le viewport
   useEffect(() => {

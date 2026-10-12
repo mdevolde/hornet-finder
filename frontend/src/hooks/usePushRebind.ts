@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { currentSubscription, pushPermission, pushSupport } from '../utils/push';
+import { clearPushBadge, currentSubscription, pushPermission, pushSupport } from '../utils/push';
 import { forgetDevice, registerDevice } from '../utils/pushApi';
 import { isInstalledPwa } from '../utils/pwa';
 
@@ -30,4 +30,18 @@ export async function releasePushDevice(): Promise<void> {
     const subscription = await currentSubscription();
     if (subscription) await forgetDevice(subscription.endpoint);
   } catch { /* never block the sign-out */ }
+}
+
+/** Clears the icon badge when the app opens and each time it comes back to the front. */
+export function usePushBadgeReset() {
+  useEffect(() => {
+    const clear = () => { if (document.visibilityState === 'visible') void clearPushBadge(); };
+    clear();
+    document.addEventListener('visibilitychange', clear);
+    window.addEventListener('focus', clear);
+    return () => {
+      document.removeEventListener('visibilitychange', clear);
+      window.removeEventListener('focus', clear);
+    };
+  }, []);
 }

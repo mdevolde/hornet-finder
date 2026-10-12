@@ -11,6 +11,16 @@ Un administrateur écrit à un membre ou à tout un groupe ; le message s'affich
 - **Accusé de réception** : le service worker (`frontend/src/sw.ts`) affiche la notification puis appelle `POST /api/push/ack/<id>/` (sans session ; l'identifiant, non devinable, est le seul justificatif). Le délai entre l'envoi et l'accusé est affiché dans *Administration → Notifications* (administrateurs de la plateforme).
 - **Journal d'audit** : `notification.sent` garde le titre et les effectifs, jamais le texte.
 
+## Pastille sur l'icône
+
+Il n'y a pas de boîte de réception : la pastille compte les notifications reçues **depuis la dernière ouverture de l'application**. Le service worker ajoute 1 à chaque push (compteur gardé dans le cache `push-badge`, qui survit à l'arrêt du worker) et le dessine avec `navigator.setAppBadge`. Rien n'est compté si l'application est au premier plan. La page efface le compteur, la pastille et les notifications encore affichées à l'ouverture et à chaque retour au premier plan (`usePushBadgeReset`).
+
+| Plateforme | Pastille |
+|---|---|
+| iPhone / iPad (PWA installée, permission accordée) | Chiffre sur l'icône. |
+| Ordinateur (Chrome, Edge, Safari 17+, application installée) | Chiffre sur l'icône. |
+| Android (Chrome) | Un point posé par le système tant qu'une notification est dans le panneau, sans chiffre : `setAppBadge` n'y change rien. |
+
 ## Ce qu'on attend des plateformes (à vérifier par appareil)
 
 | Plateforme | Attendu |
@@ -31,5 +41,6 @@ Une notification doit toujours s'afficher : iOS et Chrome retirent l'autorisatio
 ## Limites connues
 
 - Le contenu s'affiche sur l'écran verrouillé : rien de confidentiel.
+- La pastille est un compteur approximatif : deux pushes reçus en même temps peuvent n'en compter qu'un, et une notification balayée à la main du panneau n'est pas retirée du compte avant la prochaine ouverture.
 - « Accepté » ne dit pas que la personne a vu le message ; seul l'accusé du worker le dit.
 - Pas de repli par email, pas d'historique côté destinataire, pas d'envoi à `/hunters` ni à « tout le monde » d'un clic (passer par `/trappers`).
