@@ -61,6 +61,9 @@ const columns: ReferentialColumn<Species>[] = [
   },
 ];
 
+// "Autre / indéterminé" always closes the list (the API enforces it too)
+const OTHER_SLUG = 'other';
+
 /** Administration of the species referential used when recording catches. */
 export default function SpeciesAdmin() {
   const dispatch = useAppDispatch();
@@ -93,6 +96,10 @@ export default function SpeciesAdmin() {
       setDeleting(false);
     }
   };
+
+  const canMove = (item: Species, direction: -1 | 1, index: number) => (
+    item.slug !== OTHER_SLUG && species[index + direction]?.slug !== OTHER_SLUG
+  );
 
   const handleMove = async (item: Species, direction: -1 | 1) => {
     const ids = species.map((row) => row.id);
@@ -144,6 +151,7 @@ export default function SpeciesAdmin() {
           onEdit={(item) => { setEditing(item); setShowForm(true); }}
           onDelete={setToDelete}
           onMove={reordering ? handleMove : undefined}
+          canMove={canMove}
           emptyMessage={loading ? 'Chargement…' : 'Aucune espèce.'}
         />
       </Container>

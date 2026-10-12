@@ -1534,12 +1534,9 @@ class SpeciesAdminTests(TrapTestCase):
         response = SpeciesViewSet.as_view({'post': 'create'})(request)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['slug'], 'vespa-orientalis')
-        # A new species goes to the end of the list. The seeded sort_order values
-        # are spaced (10, 20, ... 999), so "end" is the previous maximum + 1
-        others = Species.objects.exclude(slug='vespa-orientalis')
-        self.assertEqual(response.data['sort_order'],
-                         max(others.values_list('sort_order', flat=True)) + 1)
-        self.assertEqual(Species.objects.last().slug, 'vespa-orientalis')
+        # A new species goes to the end of the list, just before "other"
+        slugs = list(Species.objects.values_list('slug', flat=True))
+        self.assertEqual(slugs[-2:], ['vespa-orientalis', Species.OTHER_SLUG])
 
     def _reorder(self, user, ids):
         request = self.factory.post('/species/reorder/', {'ids': ids}, format='json')
@@ -1547,11 +1544,27 @@ class SpeciesAdminTests(TrapTestCase):
         return SpeciesViewSet.as_view({'post': 'reorder'})(request)
 
     def test_admin_reorders_the_species(self):
+        other = Species.objects.get(slug=Species.OTHER_SLUG).id
         ids = list(Species.objects.values_list('id', flat=True))[::-1]
+        self.assertEqual(ids[0], other)
         self.assertEqual(self._reorder(self.admin_user, ids).status_code, 204)
-        self.assertEqual(list(Species.objects.values_list('id', flat=True)), ids)
+        # "other" stays last whatever order is sent
+        self.assertEqual(list(Species.objects.values_list('id', flat=True)), ids[1:] + [other])
         self.assertEqual(list(Species.objects.values_list('sort_order', flat=True)),
                          list(range(len(ids))))
+
+    def _patch_sort_order(self, species, sort_order):
+        request = self.factory.patch(f'/species/{species.id}/', {'sort_order': sort_order},
+                                     format='json')
+        force_authenticate(request, user=self.admin_user)
+        response = SpeciesViewSet.as_view({'patch': 'partial_update'})(request, pk=species.id)
+        self.assertEqual(response.status_code, 200)
+
+    def test_other_stays_last_after_an_edit(self):
+        self._patch_sort_order(self.other_species, 5000)
+        self.assertEqual(Species.objects.last().slug, Species.OTHER_SLUG)
+        self._patch_sort_order(Species.objects.get(slug=Species.OTHER_SLUG), 0)
+        self.assertEqual(Species.objects.last().slug, Species.OTHER_SLUG)
 
     def test_reordering_needs_every_species_exactly_once(self):
         ids = list(Species.objects.values_list('id', flat=True))

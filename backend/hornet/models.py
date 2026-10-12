@@ -261,12 +261,26 @@ class Species(models.Model):
     photo_source_url = models.URLField(max_length=500, blank=True, default='')
     sort_order = models.IntegerField(default=0)
 
+    # "Autre / indéterminé" (seeded by migration 0009) always closes the list
+    OTHER_SLUG = 'other'
+
     class Meta:
         ordering = ['sort_order', 'name']
         verbose_name_plural = 'species'
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def keep_other_last(cls):
+        """Move "other" after every other species, if anything got past it."""
+        other = cls.objects.filter(slug=cls.OTHER_SLUG).first()
+        if other is None:
+            return
+        last = cls.objects.exclude(pk=other.pk).aggregate(
+            last=models.Max('sort_order'))['last']
+        if last is not None and other.sort_order <= last:
+            cls.objects.filter(pk=other.pk).update(sort_order=last + 1)
 
 
 class Trap(GeolocatedModel):
