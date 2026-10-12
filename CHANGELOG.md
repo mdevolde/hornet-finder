@@ -57,6 +57,12 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   administrator can thus create an apiary for a beekeeper who is not at ease
   with the app, then transfer it. The former owner no longer sees it unless it
   is shared with their association.
+- Trap reading, trap that accumulates: a third answer, "Vidé en partie", for a trap
+  that could not be emptied entirely. It asks what stayed of each species found
+  (counters at zero, at most what the trap held, an estimate will do); the next
+  reading counts its new catches beyond that. "Vidé" counted the remainder twice,
+  "Laissé en place" lost the next catches. The journal shows "Vidé en partie" and
+  what stayed of each species.
 
 ### Changed
 - Default map position: the church of Vedrin Centre (50.5034, 4.8728441) replaces the

@@ -548,13 +548,14 @@ class TrapViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
                 'performed_at': {'type': 'string', 'format': 'date-time'},
                 'comments': {'type': 'string'},
                 'items': {'type': 'string',
-                          'description': 'JSON list of {"species_slug", "quantity"}, '
-                                         'quantity being what the trap holds'},
+                          'description': 'JSON list of {"species_slug", "quantity", "left"}, '
+                                         'quantity being what the trap holds, left what '
+                                         'stayed in it when it was only partly emptied'},
                 'bycatch_counted': {'type': 'boolean',
                                     'description': 'Whether the other species were counted'},
                 'emptied': {'type': 'boolean',
                             'description': 'Whether the trap was emptied, required when '
-                                           'its type accumulates'},
+                                           'its type accumulates; false when partly emptied'},
                 'actions': {'type': 'string',
                             'description': 'JSON list of actions done during the visit: '
                                            '"cleaning", "refill", "repair"'},
@@ -589,7 +590,7 @@ class TrapViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
                         performed_by=performed_by, species=item['species'],
                         # Derived below, once the reading is in the journal
                         quantity=item['quantity'], observed_quantity=item['quantity'],
-                        emptied=data['emptied'], batch=batch,
+                        emptied=data['emptied'], left_quantity=item['left'], batch=batch,
                         bycatch_counted=data['bycatch_counted'],
                         # Said once for the whole visit, not repeated per species
                         comments=data['comments'] if index == 0 else '',
@@ -611,7 +612,8 @@ class TrapViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
                 audit.record(request, 'trap.visit_recorded', trap, changes={
                     'batch': str(batch),
                     'performed_at': audit.json_value(data['performed_at']),
-                    'items': [{'species': item['species'].slug, 'observed': item['quantity']}
+                    'items': [{'species': item['species'].slug, 'observed': item['quantity'],
+                               **({'left': item['left']} if item['left'] is not None else {})}
                               for item in data['items']],
                     'actions': list(data['actions']),
                     'emptied': data['emptied'],

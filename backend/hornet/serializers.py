@@ -355,12 +355,12 @@ class TrapEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrapEvent
         fields = ['id', 'trap', 'kind', 'performed_at', 'performed_by', 'species',
-                  'species_slug', 'quantity', 'observed_quantity', 'emptied', 'batch',
-                  'bycatch_counted', 'comments', 'photos', 'created_at']
+                  'species_slug', 'quantity', 'observed_quantity', 'emptied', 'left_quantity',
+                  'batch', 'bycatch_counted', 'comments', 'photos', 'created_at']
         # On a catch, `quantity` is written as what the trap held and read back
         # as the catches derived from it (see Trap.recompute_catches)
         read_only_fields = ['id', 'trap', 'performed_by', 'species', 'observed_quantity',
-                            'emptied', 'batch', 'bycatch_counted', 'created_at']
+                            'emptied', 'left_quantity', 'batch', 'bycatch_counted', 'created_at']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -401,6 +401,11 @@ class TrapEventSerializer(serializers.ModelSerializer):
                     {'quantity': "Only the Asian hornet can be recorded at zero."}
                 )
             if 'quantity' in attrs:
+                left = getattr(self.instance, 'left_quantity', None)
+                if left is not None and quantity < left:
+                    raise serializers.ValidationError(
+                        {'quantity': f"The trap kept {left} of them after this reading."}
+                    )
                 attrs['observed_quantity'] = quantity
             if self.instance is None:
                 # A lone catch takes everything out, as readings used to
@@ -418,6 +423,8 @@ class CatchItemSerializer(serializers.Serializer):
     )
     # What the trap holds; zero is only meaningful for the Asian hornet
     quantity = serializers.IntegerField(min_value=0)
+    # What stayed in a trap that could only be partly emptied
+    left = serializers.IntegerField(min_value=0, required=False, allow_null=True, default=None)
 
 
 class CatchSerializer(serializers.Serializer):
@@ -429,7 +436,10 @@ class CatchSerializer(serializers.Serializer):
     Each item gives what the trap holds of a species, the catches are derived
     from it (see `Trap.recompute_catches`). For a trap emptied at every visit,
     that is simply what was taken out. A trap whose type accumulates must say
-    whether it was `emptied`; any other trap always is.
+    whether it was `emptied`; any other trap always is. One that could only be
+    partly emptied is not `emptied` and gives what stayed of every species
+    (`left`); left entirely or not at all, it is stored as left in place or
+    emptied.
 
     The Asian hornet may be recorded at zero, which is how a reading without
     any catch is kept; another species at zero is refused. `bycatch_counted`
@@ -481,11 +491,36 @@ class CatchSerializer(serializers.Serializer):
     def validate(self, attrs):
         if any(item['species'].slug != HORNET_SPECIES_SLUG for item in attrs['items']):
             attrs['bycatch_counted'] = True
+        items = attrs['items']
+        partly = any(item['left'] is not None for item in items)
         if self.context['trap'].trap_type.accumulates:
             if attrs['emptied'] is None:
                 raise serializers.ValidationError({'emptied': "Say whether the trap was emptied."})
         else:
+            if partly:
+                raise serializers.ValidationError(
+                    {'items': "Only a trap that accumulates can keep part of its catches."}
+                )
             attrs['emptied'] = True
+        if partly:
+            if attrs['emptied']:
+                raise serializers.ValidationError(
+                    {'items': "An emptied trap keeps nothing: leave out what was left."}
+                )
+            if any(item['left'] is None for item in items):
+                raise serializers.ValidationError(
+                    {'items': "Say what was left of every species, zero included."}
+                )
+            if any(item['left'] > item['quantity'] for item in items):
+                raise serializers.ValidationError(
+                    {'items': "What was left cannot exceed what the trap held."}
+                )
+            # Nothing or everything left: an emptied trap, or one left in place
+            if all(item['left'] == 0 for item in items):
+                attrs['emptied'] = True
+            if attrs['emptied'] or all(item['left'] == item['quantity'] for item in items):
+                for item in items:
+                    item['left'] = None
         return attrs
 
 

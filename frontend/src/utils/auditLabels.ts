@@ -194,6 +194,7 @@ export const FIELD_LABELS: Record<string, string> = {
   observed_quantity: 'Observés',
   quantity: 'Captures',
   emptied: 'Vidé',
+  left_quantity: 'Restés',
   bycatch_counted: 'Autres espèces comptées',
   batch: 'Visite',
   slug: 'Identifiant',
@@ -278,8 +279,8 @@ export function formatValue(key: string, value: unknown, people?: AuditEvent['pe
     }
     if (key === 'items') {
       return value.map((item) => {
-        const { species, observed } = item as { species?: string; observed?: number };
-        return `${species ?? '?'} : ${observed ?? '?'}`;
+        const { species, observed, left } = item as { species?: string; observed?: number; left?: number };
+        return `${species ?? '?'} : ${observed ?? '?'}${left !== undefined ? ` (${left} restés)` : ''}`;
       }).join(', ');
     }
     return `${value.length} élément${value.length > 1 ? 's' : ''}`;

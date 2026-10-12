@@ -116,8 +116,11 @@ export default function TrapsDoc() {
           <li><strong>Relevé d'un piège à accumulation</strong> (harpe, nasse, piège létal... selon le
             type) : les prises restent dans le piège d'un relevé à l'autre. On compte alors tout ce
             qu'il contient, en partant des compteurs laissés au relevé précédent, puis l'on indique
-            s'il a été <em>vidé</em> ou <em>laissé en place</em> ; l'application en déduit les
-            nouvelles prises, seules comptées dans le total et les statistiques</li>
+            s'il a été <em>vidé</em>, <em>vidé en partie</em> ou <em>laissé en place</em> ;
+            l'application en déduit les nouvelles prises, seules comptées dans le total et les
+            statistiques. <em>Vidé en partie</em>, quand une partie des insectes n'a pas pu être
+            retirée, demande ce qui reste de chaque espèce (compteurs à zéro, une estimation
+            suffit) : le relevé suivant part de ce reste</li>
           <li><strong>Inspection, nettoyage, recharge, réparation</strong> : l'entretien courant, seul</li>
           <li><strong>Installation</strong> : remet le piège en service, à la date indiquée</li>
           <li><strong>Retrait</strong> : marque le piège comme remisé — il reste sur la carte, en gris</li>

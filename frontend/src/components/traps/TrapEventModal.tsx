@@ -12,7 +12,8 @@ import SpeciesCard from './SpeciesCard';
 import { SPECIES_GRID_STYLE } from './speciesGrid';
 import SpeciesPicker from './SpeciesPicker';
 import BycatchQuestionSheet from './BycatchQuestionSheet';
-import EmptiedQuestionSheet from './EmptiedQuestionSheet';
+import EmptiedQuestionSheet, { type EmptyingAnswer } from './EmptiedQuestionSheet';
+import LeftInTrapModal from './LeftInTrapModal';
 import { EVENT_KINDS, VISIT_ACTION_KINDS, eventKindInfo } from './eventKinds';
 
 /** Local datetime string accepted by <input type="datetime-local"> */
@@ -77,8 +78,9 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
   const [visitActions, setVisitActions] = useState<TrapEventKind[]>([]);
   // Questions asked on saving a reading, one sheet at a time in place of the form:
   // the other insects (only the Asian hornet recorded), then the emptying (a
-  // trap that accumulates), last, as it is what the visit ends with
-  const [question, setQuestion] = useState<'bycatch' | 'emptied' | null>(null);
+  // trap that accumulates), last, as it is what the visit ends with, followed by
+  // what stayed in it when it was only partly emptied
+  const [question, setQuestion] = useState<'bycatch' | 'emptied' | 'left' | null>(null);
   const [bycatchCounted, setBycatchCounted] = useState(true);
   const [picking, setPicking] = useState(false);
   const [comments, setComments] = useState('');
@@ -107,6 +109,10 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
   // the Asian hornet's: its zero is the result of the reading
   const counted = lines.filter((line) => line.quantity > 0 || line.slug === DEFAULT_SPECIES);
   const hasBycatch = counted.some((line) => line.slug !== DEFAULT_SPECIES);
+  // What could stay in a partly emptied trap: the species found, at most what was held
+  const held = counted
+    .filter((line) => line.quantity > 0)
+    .map((line) => ({ slug: line.slug, held: line.quantity }));
 
   const updateLine = (slug: string, change: Partial<CatchLine>) =>
     setLines((current) => current.map((line) => (line.slug === slug ? { ...line, ...change } : line)));
@@ -121,9 +127,11 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
       ? current.filter((item) => item !== action)
       : [...current, action]));
 
-  const save = async (bycatch: boolean, emptied: boolean | null) => {
+  /** `left` is what stayed of each species in a trap that was only partly emptied */
+  const save = async (bycatch: boolean, emptied: boolean | null, left?: Record<string, number>) => {
     if (!trap) return;
-    setQuestion(null);
+    // The form shows the progress, except after counting what stayed, which shows it itself
+    if (!left) setQuestion(null);
     setSaving(true);
     setError(null);
     // The input has no timezone, the browser's one applies
@@ -134,7 +142,9 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
           trapId: trap.id,
           performed_at,
           comments,
-          items: counted.map(({ slug, quantity, photo }) => ({ species_slug: slug, quantity, photo })),
+          items: counted.map(({ slug, quantity, photo }) => ({
+            species_slug: slug, quantity, photo, left: left ? left[slug] ?? 0 : null,
+          })),
           bycatch_counted: bycatch,
           emptied,
           actions: visitActions,
@@ -145,6 +155,8 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
       onHide();
     } catch (submitError) {
       setError(submitError as string);
+      // Back to the form, where the error shows
+      setQuestion(null);
     } finally {
       setSaving(false);
     }
@@ -173,6 +185,14 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
       return;
     }
     save(bycatch, null);
+  };
+
+  const answerEmptied = (answer: EmptyingAnswer) => {
+    if (answer === 'partly') {
+      setQuestion('left');
+      return;
+    }
+    save(bycatchCounted, answer === 'emptied');
   };
 
   return (
@@ -353,7 +373,17 @@ export default function TrapEventModal({ onHide, trap, initialKind = 'catch' }: 
       <EmptiedQuestionSheet
         show={question === 'emptied'}
         onHide={() => setQuestion(null)}
-        onAnswer={(emptied) => save(bycatchCounted, emptied)}
+        onAnswer={answerEmptied}
+        canPartly={held.length > 0}
+      />
+
+      <LeftInTrapModal
+        show={question === 'left'}
+        onHide={() => setQuestion('emptied')}
+        lines={held}
+        species={species}
+        saving={saving}
+        onSave={(left) => save(bycatchCounted, false, left)}
       />
     </>
   );

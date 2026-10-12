@@ -334,7 +334,8 @@ class Trap(GeolocatedModel):
         Derive the catches of every reading from what was seen in the trap.
 
         A reading records what the trap holds (`observed_quantity`) and whether
-        it was emptied afterwards. What it left in place is the baseline of the
+        it was emptied afterwards, entirely, partly (`left_quantity` says what
+        stayed) or not at all. What it left in place is the baseline of the
         next reading, whose catches (`quantity`) are what it saw beyond that
         baseline, never below zero (escaped or decayed insects). An emptied
         trap, or one put in service (installation), starts again from zero.
@@ -381,7 +382,11 @@ class Trap(GeolocatedModel):
             # Readings recorded before the question are taken as emptied, as they were
             if first.emptied is False:
                 others_known = bool(first.bycatch_counted)
-                stock = observed if others_known else {HORNET_SPECIES_SLUG: observed.get(HORNET_SPECIES_SLUG, 0)}
+                # A partly emptied trap keeps what the reading says was left
+                left = {event.species.slug: (event.left_quantity if event.left_quantity is not None
+                                             else observed[event.species.slug])
+                        for event in step}
+                stock = left if others_known else {HORNET_SPECIES_SLUG: left.get(HORNET_SPECIES_SLUG, 0)}
                 left_at = first.performed_at
             else:
                 stock, others_known, left_at = {}, True, None
@@ -431,7 +436,8 @@ class TrapEvent(models.Model):
     and the events recorded together share a `batch` and a `performed_at`.
     Such a visit is a reading ("relevé"): what the capture zone holds is counted
     (`observed_quantity`), then removed, or left in place in a trap whose type
-    accumulates (`emptied`). The catches of the reading (`quantity`) are derived
+    accumulates (`emptied`), or partly removed when it could not be emptied
+    entirely (`left_quantity`). The catches of the reading (`quantity`) are derived
     from it, see `Trap.recompute_catches`. The Asian hornet is always recorded,
     at zero if need be, so a reading without any catch still shows in the
     journal and in the statistics. The maintenance actions done during the same
@@ -474,6 +480,10 @@ class TrapEvent(models.Model):
     # Whether the trap was emptied after this reading, the same on every catch
     # event of a batch; always true for a type that does not accumulate
     emptied = models.BooleanField(null=True, blank=True)
+    # What stayed in the trap when it could only be partly emptied (`emptied`
+    # False), set on every catch event of such a batch; NULL otherwise, when
+    # all of it stayed (left in place) or nothing did (emptied)
+    left_quantity = models.PositiveIntegerField(null=True, blank=True)
     # Groups the events of one visit (catches and actions); NULL for a lone event
     batch = models.UUIDField(null=True, blank=True, db_index=True)
     # Whether the other species were counted too during this reading, the same
@@ -496,6 +506,15 @@ class TrapEvent(models.Model):
                                                           bycatch_counted__isnull=True))
                 ),
                 name='trapevent_catch_fields',
+            ),
+            # Only a partly emptied reading leaves something, at most what it saw
+            models.CheckConstraint(
+                condition=(
+                    models.Q(left_quantity__isnull=True)
+                    | models.Q(kind='catch', emptied=False,
+                               left_quantity__lte=models.F('observed_quantity'))
+                ),
+                name='trapevent_left_quantity',
             ),
         ]
 
