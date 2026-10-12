@@ -1496,6 +1496,78 @@ class TrapAccumulationTests(TrapTestCase):
         self._read(7, False, 2)
         self.assertEqual(self._caught(), [5, 2])
 
+    def _read_partly(self, day, left, hornets, bees=None, **extra):
+        """A reading after which the trap was only partly emptied, `left` per item."""
+        items = [{'species_slug': 'vespa-velutina', 'quantity': hornets, 'left': left[0]}]
+        if bees is not None:
+            items.append({'species_slug': 'apis-mellifera', 'quantity': bees, 'left': left[1]})
+        return self._read(day, False, hornets, items=json.dumps(items), **extra)
+
+    def test_a_partly_emptied_trap_keeps_what_stayed_in_it(self):
+        response = self._read_partly(0, (5, 1), 30, bees=4)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual([(e['observed_quantity'], e['quantity'], e['left_quantity'], e['emptied'])
+                          for e in response.data], [(30, 30, 5, False), (4, 4, 1, False)])
+        self.trap.refresh_from_db()
+        self.assertEqual(self.trap.contents['items'],
+                         [{'species_slug': 'vespa-velutina', 'quantity': 5},
+                          {'species_slug': 'apis-mellifera', 'quantity': 1}])
+        # Twelve new hornets and two bees beyond what stayed
+        self._read(7, True, 17, bees=3)
+        self.assertEqual(self._caught(), [30, 12])
+        self.assertEqual(self._caught('apis-mellifera'), [4, 2])
+        self.trap.refresh_from_db()
+        self.assertEqual(self.trap.hornet_catch_count, 42)
+
+    def test_a_species_entirely_removed_is_left_at_zero(self):
+        self._read_partly(0, (3, 0), 10, bees=2)
+        self.trap.refresh_from_db()
+        self.assertEqual(self.trap.contents['items'],
+                         [{'species_slug': 'vespa-velutina', 'quantity': 3}])
+
+    def test_partly_emptied_without_counting_the_others_keeps_only_the_hornets(self):
+        self._read_partly(0, (4,), 9, bycatch_counted='false')
+        self.trap.refresh_from_db()
+        self.assertFalse(self.trap.contents['others_counted'])
+        self._read(7, True, 6, bees=2)
+        self.assertEqual(self._caught(), [9, 2])
+        self.assertFalse(TrapEvent.objects.filter(trap=self.trap).order_by('-performed_at')
+                         .first().bycatch_counted)
+
+    def test_nothing_or_everything_left_is_stored_as_emptied_or_left_in_place(self):
+        self._read_partly(0, (0, 0), 6, bees=2)
+        self.assertEqual(set(TrapEvent.objects.values_list('emptied', 'left_quantity')),
+                         {(True, None)})
+        TrapEvent.objects.all().delete()
+        self._read_partly(0, (6, 2), 6, bees=2)
+        self.assertEqual(set(TrapEvent.objects.values_list('emptied', 'left_quantity')),
+                         {(False, None)})
+
+    def test_what_was_left_must_be_complete_and_consistent(self):
+        # More than what the trap held
+        self.assertEqual(self._read_partly(0, (8,), 5).status_code, 400)
+        # Missing for one species
+        items = [{'species_slug': 'vespa-velutina', 'quantity': 5, 'left': 2},
+                 {'species_slug': 'apis-mellifera', 'quantity': 3}]
+        self.assertEqual(self._read(0, False, 5, items=json.dumps(items)).status_code, 400)
+        # An emptied trap keeps nothing
+        items = [{'species_slug': 'vespa-velutina', 'quantity': 5, 'left': 2}]
+        self.assertEqual(self._read(0, True, 5, items=json.dumps(items)).status_code, 400)
+        self.assertFalse(TrapEvent.objects.exists())
+
+    def test_a_trap_that_does_not_accumulate_cannot_keep_anything(self):
+        self.trap.trap_type = TrapType.objects.create(slug='net-test', name='Filet test')
+        self.trap.save()
+        self.assertEqual(self._read_partly(0, (2,), 5).status_code, 400)
+
+    def test_a_correction_cannot_go_below_what_stayed(self):
+        first = self._read_partly(0, (5,), 30).data[0]
+        request = self.factory.patch(f'/trap-events/{first["id"]}/', {'quantity': 4},
+                                     format='json')
+        force_authenticate(request, user=self.owner_user)
+        response = TrapEventViewSet.as_view({'patch': 'partial_update'})(request, pk=first['id'])
+        self.assertEqual(response.status_code, 400)
+
     def test_the_trap_exposes_its_type_and_contents(self):
         self._read(0, False, 5)
         data = TrapSerializer(Trap.objects.get(pk=self.trap.pk)).data

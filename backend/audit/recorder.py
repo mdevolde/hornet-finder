@@ -53,7 +53,7 @@ FIELDS = {
     'trap': ['latitude', 'longitude', 'address', 'trap_type', 'installed_at', 'active', 'visibility',
              'group', 'owner', 'comments', 'photo'],
     'trap_event': ['trap', 'kind', 'performed_at', 'performed_by', 'species', 'observed_quantity',
-                   'quantity', 'emptied', 'bycatch_counted', 'batch', 'comments'],
+                   'quantity', 'emptied', 'left_quantity', 'bycatch_counted', 'batch', 'comments'],
     'trap_type': ['slug', 'name', 'description', 'sort_order', 'apiary_bound', 'accumulates', 'photo'],
     'species': ['slug', 'name', 'scientific_name', 'wikipedia_url', 'photo_credit', 'photo_source_url',
                 'sort_order', 'photo'],

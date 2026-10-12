@@ -270,8 +270,15 @@ vide quand on ne peut plus compter de façon fiable. Ces pièges ne sont pas vid
 - Le type de piège porte `accumulates`. Pour un tel piège, le relevé compte
   **tout ce que contient le piège** (compteurs préremplis avec ce que le relevé
   précédent a laissé, `Trap.contents`) et demande, sans valeur par défaut,
-  **« Vidé » ou « Laissé en place »** (`TrapEvent.emptied`). Pour un autre type,
-  `emptied` vaut toujours `true` : rien ne change.
+  **« Vidé », « Vidé en partie » ou « Laissé en place »** (`TrapEvent.emptied`).
+  Pour un autre type, `emptied` vaut toujours `true` : rien ne change.
+- Vidé en partie : `emptied = false` et `TrapEvent.left_quantity` (ce qui reste)
+  sur chaque espèce du relevé, entre 0 et `observed_quantity`. Le contenu laissé
+  est alors ce reste au lieu de tout ce qui a été vu. Un reste nul partout est
+  enregistré comme un vidage, un reste égal au contenu partout comme « laissé en
+  place ». Le reste est souvent estimé : son erreur passe telle quelle dans les
+  captures du relevé suivant. Exemple : 30 vus, 5 restés, 17 au relevé suivant
+  donnent 12 captures ; « Vidé » en aurait donné 17 (+5), « Laissé en place » 0.
 - Les captures d'un relevé sont déduites (`Trap.recompute_catches`) :
   `quantity = max(0, observed_quantity − laissé au relevé précédent)`. Un
   vidage ou une installation remet le contenu à zéro ; un retrait ne le fait

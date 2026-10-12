@@ -141,7 +141,8 @@ function isReading(entry: TrapEvent[]): boolean {
  * One visit: a small card per species found, with its new catches, then the
  * actions done at the same time. A reading without any catch says so in its
  * title. In a trap that accumulates, a card also tells what the trap held when
- * that differs from the new catches, and the entry whether it was emptied.
+ * that differs from the new catches and what stayed in a partly emptied trap,
+ * and the entry whether it was emptied.
  */
 function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
   events: TrapEvent[];
@@ -153,6 +154,12 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
   const catches = events.filter((event) => event.kind === 'catch');
   const actions = events.filter((event) => event.kind !== 'catch');
   const first = catches[0];
+  const partly = catches.some((event) => event.left_quantity != null);
+  const emptying = first.emptied
+    ? { icon: 'arrow-counterclockwise', label: 'Vidé' }
+    : partly
+      ? { icon: 'layers-half', label: 'Vidé en partie' }
+      : { icon: 'stack', label: 'Laissé en place' };
   const info = eventKindInfo('catch');
   const total = catches.reduce((sum, event) => sum + (event.quantity ?? 0), 0);
   const comments = events.map((event) => event.comments).filter(Boolean);
@@ -211,6 +218,11 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
                   {held} présent{(held ?? 0) > 1 ? 's' : ''}
                 </div>
               )}
+              {event.left_quantity != null && (
+                <div className="text-truncate text-muted" style={{ fontSize: '0.7rem' }}>
+                  {event.left_quantity} resté{event.left_quantity > 1 ? 's' : ''}
+                </div>
+              )}
             </div>
           );
         })}
@@ -219,8 +231,8 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
         <div className="journal-detail small text-muted d-flex flex-wrap column-gap-3 mt-1">
           {(accumulates || first.emptied === false) && first.emptied !== null && (
             <span>
-              <i className={`bi bi-${first.emptied ? 'arrow-counterclockwise' : 'stack'} me-1`} aria-hidden="true" />
-              {first.emptied ? 'Vidé' : 'Laissé en place'}
+              <i className={`bi bi-${emptying.icon} me-1`} aria-hidden="true" />
+              {emptying.label}
             </span>
           )}
           {actions.map((action) => {

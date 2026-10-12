@@ -27,11 +27,15 @@ interface SpeciesCardProps {
   quantity: number;
   /** In a trap that accumulates, what the previous reading left: the card shows the new catches */
   baseline?: number;
+  /** Upper bound of the count, none by default */
+  max?: number;
   /** Photo of this catch, which replaces the species picture */
-  photo: File | null;
+  photo?: File | null;
   onQuantityChange: (quantity: number) => void;
-  onPhotoChange: (photo: File | null) => void;
-  onRemove: () => void;
+  /** Without it, the card has no photo button */
+  onPhotoChange?: (photo: File | null) => void;
+  /** Without it, the card cannot be removed */
+  onRemove?: () => void;
   disabled?: boolean;
 }
 
@@ -41,7 +45,8 @@ interface SpeciesCardProps {
  * in the field; the badge opens a number field for large counts.
  */
 export default function SpeciesCard({
-  species, fallbackName, quantity, baseline, photo, onQuantityChange, onPhotoChange, onRemove, disabled,
+  species, fallbackName, quantity, baseline, max, photo = null, onQuantityChange: setQuantity, onPhotoChange,
+  onRemove, disabled,
 }: SpeciesCardProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   // Preview of the photo, created and revoked by the handlers like PhotoInput does
@@ -50,6 +55,8 @@ export default function SpeciesCard({
   const [preparing, setPreparing] = useState(false);
 
   const name = species?.name ?? fallbackName;
+  const full = max !== undefined && quantity >= max;
+  const onQuantityChange = (value: number) => setQuantity(max === undefined ? value : Math.min(max, value));
 
   const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -59,7 +66,7 @@ export default function SpeciesCard({
       const resized = await resizeImage(file);
       if (photoUrl) URL.revokeObjectURL(photoUrl);
       setPhotoUrl(URL.createObjectURL(resized));
-      onPhotoChange(resized);
+      onPhotoChange?.(resized);
     } finally {
       setPreparing(false);
       event.target.value = '';
@@ -69,7 +76,7 @@ export default function SpeciesCard({
   const clearPhoto = () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(null);
-    onPhotoChange(null);
+    onPhotoChange?.(null);
   };
 
   return (
@@ -94,6 +101,7 @@ export default function SpeciesCard({
             type="number"
             inputMode="numeric"
             min={0}
+            max={max}
             autoFocus
             value={quantity}
             onChange={(event) => onQuantityChange(Math.max(0, Number(event.target.value) || 0))}
@@ -120,16 +128,18 @@ export default function SpeciesCard({
           </button>
         )}
 
-        <button
-          type="button"
-          className="btn btn-sm btn-light position-absolute top-0 start-0 m-1 py-1 px-2 lh-1"
-          onClick={onRemove}
-          disabled={disabled}
-          title="Retirer cette espèce"
-          aria-label="Retirer cette espèce"
-        >
-          <i className="bi bi-x-lg" aria-hidden="true" />
-        </button>
+        {onRemove && (
+          <button
+            type="button"
+            className="btn btn-sm btn-light position-absolute top-0 start-0 m-1 py-1 px-2 lh-1"
+            onClick={onRemove}
+            disabled={disabled}
+            title="Retirer cette espèce"
+            aria-label="Retirer cette espèce"
+          >
+            <i className="bi bi-x-lg" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       <div className="px-1 pt-1 small text-center text-truncate" title={species?.scientific_name || name}>
@@ -154,35 +164,39 @@ export default function SpeciesCard({
         >
           <i className="bi bi-dash-lg" aria-hidden="true" />
         </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className={`flex-fill text-decoration-none py-2 ${photo ? 'text-success' : 'text-secondary'}`}
-          onClick={() => (photo ? clearPhoto() : inputRef.current?.click())}
-          disabled={disabled || preparing}
-          title={photo ? 'Retirer la photo' : 'Photographier cette capture'}
-        >
-          <i className={`bi ${photo ? 'bi-camera-fill' : 'bi-camera'}`} aria-hidden="true" />
-        </Button>
+        {onPhotoChange && (
+          <Button
+            variant="link"
+            size="sm"
+            className={`flex-fill text-decoration-none py-2 ${photo ? 'text-success' : 'text-secondary'}`}
+            onClick={() => (photo ? clearPhoto() : inputRef.current?.click())}
+            disabled={disabled || preparing}
+            title={photo ? 'Retirer la photo' : 'Photographier cette capture'}
+          >
+            <i className={`bi ${photo ? 'bi-camera-fill' : 'bi-camera'}`} aria-hidden="true" />
+          </Button>
+        )}
         <Button
           variant="link"
           size="sm"
           className="flex-fill text-decoration-none py-2"
           onClick={() => onQuantityChange(quantity + 1)}
-          disabled={disabled}
+          disabled={disabled || full}
           aria-label="Ajouter un"
         >
           <i className="bi bi-plus-lg" aria-hidden="true" />
         </Button>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="d-none"
-        onChange={handleFile}
-      />
+      {onPhotoChange && (
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="d-none"
+          onChange={handleFile}
+        />
+      )}
     </div>
   );
 }
