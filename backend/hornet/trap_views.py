@@ -206,6 +206,10 @@ class SpeciesViewSet(ReferentialViewSet):
                 or not all(isinstance(pk, int) and not isinstance(pk, bool) for pk in ids)
                 or set(ids) != current):
             raise DRFValidationError({'ids': 'Must list every species exactly once.'})
+        # "other" closes the list whatever order is sent
+        other = Species.objects.filter(slug=Species.OTHER_SLUG).values_list('id', flat=True).first()
+        if other is not None:
+            ids = [pk for pk in ids if pk != other] + [other]
         # Renumber everything: existing sort_order values are often all equal
         with transaction.atomic():
             for position, pk in enumerate(ids):

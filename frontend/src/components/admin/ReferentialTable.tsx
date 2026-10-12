@@ -22,6 +22,8 @@ interface ReferentialTableProps<T> {
   onDelete?: (row: T) => void;
   /** Reorder mode: the edit and delete actions give way to move up / move down */
   onMove?: (row: T, direction: -1 | 1) => void;
+  /** Reorder mode: whether a row may move that way (default: within the list) */
+  canMove?: (row: T, direction: -1 | 1, index: number) => boolean;
   emptyMessage?: string;
 }
 
@@ -30,7 +32,7 @@ interface ReferentialTableProps<T> {
  * plus the edit and delete actions of each row.
  */
 export default function ReferentialTable<T>({
-  rows, columns, rowKey, onEdit, onDelete, onMove, emptyMessage = 'Aucune entrée.',
+  rows, columns, rowKey, onEdit, onDelete, onMove, canMove, emptyMessage = 'Aucune entrée.',
 }: ReferentialTableProps<T>) {
   if (rows.length === 0) {
     return <p className="text-muted">{emptyMessage}</p>;
@@ -41,11 +43,13 @@ export default function ReferentialTable<T>({
     <div className="d-inline-flex gap-1">
       <IconButton
         variant="outline-secondary" icon="arrow-up" label="Monter" showLabel="never"
-        disabled={index === 0} onClick={() => onMove(row, -1)}
+        disabled={index === 0 || (canMove && !canMove(row, -1, index))}
+        onClick={() => onMove(row, -1)}
       />
       <IconButton
         variant="outline-secondary" icon="arrow-down" label="Descendre" showLabel="never"
-        disabled={index === rows.length - 1} onClick={() => onMove(row, 1)}
+        disabled={index === rows.length - 1 || (canMove && !canMove(row, 1, index))}
+        onClick={() => onMove(row, 1)}
       />
     </div>
   ) : (onEdit || onDelete) && (

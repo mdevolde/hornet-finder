@@ -75,6 +75,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   addresses open the home page with the help panel on the module concerned.
 
 ### Fixed
+- Species: "Autre / indéterminé" always closes the list. A species added later
+  went after it; it now goes just before, the order arrows never move "Autre"
+  nor put anything below it, and the server keeps it last whatever order it
+  receives. The deploy moves it back to the end where needed (migration 0024).
 - Audit trail: events sharing the same time (one request, a rebuilt batch) were
   repeated or shown out of order from one page to the next; the list is now
   strictly newest first, and an icon reverses it (oldest first), the CSV export
