@@ -1,4 +1,4 @@
-status: pending
+status: applied (2026-10-13)
 
 # Fond de carte satellite : CSP nginx (`devel`)
 
