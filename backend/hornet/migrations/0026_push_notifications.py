@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('hornet', '0023_afsca_number_format'),
+        ('hornet', '0025_trap_partial_emptying'),
     ]
 
     operations = [

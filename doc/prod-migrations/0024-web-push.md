@@ -5,7 +5,7 @@ status: pending
 **À exécuter depuis le worktree prod (`/home/debian/hornet-finder`), après l'avoir fait et vérifié en dev.**
 
 ## Périmètre
-- Migration `0024_push_notifications` : trois nouvelles tables (`hornet_pushsubscription`, `hornet_pushnotification`, `hornet_pushdelivery`).
+- Migration `0026_push_notifications` : trois nouvelles tables (`hornet_pushsubscription`, `hornet_pushnotification`, `hornet_pushdelivery`).
 - Nouvelle dépendance Python `pywebpush` (reconstruction de l'image de l'API).
 - Le service worker de la PWA passe de `generateSW` à `injectManifest` (`frontend/src/sw.ts`) : le frontend de prod doit être reconstruit (`-b`).
 - `.env` : une paire de clés VAPID propre à la prod (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optionnellement `VAPID_SUBJECT`). Sans elles, l'application ne propose pas les notifications.
@@ -25,7 +25,7 @@ Ce qui **ne change pas** : Keycloak, nginx, volumes. Pas d'interruption au-delà
    docker compose run --rm --no-deps hornet-finder-api python manage.py generate_vapid_keys
    ```
    Les deux lignes affichées vont dans `.env` du worktree prod. La clé privée ne doit apparaître nulle part ailleurs (ni commit, ni logs, ni chat).
-3. `./deploy.sh -b` (reconstruit l'image de l'API et le frontend ; l'API applique `0024_push_notifications`).
+3. `./deploy.sh -b` (reconstruit l'image de l'API et le frontend ; l'API applique `0026_push_notifications`).
 
 ## Vérification
 - En étant connecté : *Mon profil → Notifications* propose un interrupteur et un bouton d'essai.
