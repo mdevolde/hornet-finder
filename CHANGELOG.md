@@ -10,6 +10,90 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-13
+
+### Security
+- Django 6.1.1 → 6.1.2: security release (CVE-2026-87890, bytes in spatial
+  lookups; CVE-2026-15830, WKB geometry collection limits; CVE-2026-84429 and
+  CVE-2026-77050, header parsing and memory exhaustion; CVE-2026-87975, model
+  formsets).
+- Django REST framework 3.18.1 → 3.18.3: hardened content negotiation against
+  large `Accept` headers (GHSA-33wh-fxxf-88vv), non-text charsets refused
+  (GHSA-3547-9m27-7rxg); 3.18.3 fixes a regression of 3.18.2.
+
+### Added
+- Release script: `release.sh` now accepts short argument (`-n`) for dry run.
+- Map: it reopens where you left it (centre and zoom, on this device, for 30 days after
+  the last move). Only a drag by hand is remembered, never a locate fix or a jump to an
+  object. "Position par défaut" in the layers sheet forgets it and recentres on the
+  default position.
+- Help panel: the documentation opens in a panel sliding in from the right, over the
+  page and over any dialog (nothing typed is lost; Back or Escape close the panel
+  first). A help tip linked to the documentation ends with "Documentation
+  complète", which opens it at the right section (with a mouse, a click on the icon
+  does the same); about thirty tips of the traps, nests, apiaries and statistics
+  modules are linked. In the panel: a list of the modules of your roles, a "go to"
+  list per module, a search in the page (matches highlighted, ▲▼ to step through
+  them) and a search in all the documentation. The "Aide" entry of the menu opens it.
+- Map: satellite view. The layers sheet starts with two exclusive switches, "Plan" and "Satellite"
+  (Esri World Imagery, remembered on the device). The nginx CSP now allows
+  `server.arcgisonline.com` for images: nginx must be reloaded (see
+  `doc/prod-migrations/0022-satellite-basemap-csp.md`).
+- Audit trail: every business action (reports, edits, deletions, hand-overs,
+  sharings, delegations, trap journal, QR codes, group members, invitations,
+  statistics exports and their downloads) is recorded with its author, time and
+  changes, append-only, kept 1 year (`AUDIT_RETENTION_DAYS`). Platform
+  administrators read it in Administration → "Journal d'audit": list by day,
+  filters (period, domains, action, person, source, text), detail with the
+  changes before → after, history of an object (🕘 "Historique" in the nest,
+  hornet, apiary and trap sheets), of a person or of a request, CSV export. The
+  last year is rebuilt from the dated facts of the existing data at deployment.
+  The help (Administration module, new) tells every user what is recorded, who
+  sees it and for how long. See `doc/AUDIT_TRAIL.md`.
+- Install suggestion: from the second visit, a sheet offers to pin the app on
+  the home screen (an "Installer" button on Android, the share-menu steps on
+  iOS). Closing it postpones the next suggestion by 30 days; the menu entry
+  "Installer l'app" stays available until the app is installed.
+- Apiary sheet, "Changer de propriétaire": a platform administrator, or the
+  administrator of a beekeeper association (for its own members), hands an
+  apiary over to a member of the association, listed by first and last name. An
+  administrator can thus create an apiary for a beekeeper who is not at ease
+  with the app, then transfer it. The former owner no longer sees it unless it
+  is shared with their association.
+- Trap reading, trap that accumulates: a third answer, "Vidé en partie", for a trap
+  that could not be emptied entirely. It asks what stayed of each species found
+  (counters at zero, at most what the trap held, an estimate will do); the next
+  reading counts its new catches beyond that. "Vidé" counted the remainder twice,
+  "Laissé en place" lost the next catches. The journal shows "Vidé en partie" and
+  what stayed of each species.
+
+### Changed
+- Default map position: the church of Vedrin Centre (50.5034, 4.8728441) replaces the
+  previous point, for the map and the compass.
+- Privacy policy: new article 8 on the audit trail (what is recorded, who reads
+  it, kept one year, kept after an account deletion under the former account's
+  technical identifier), its legal basis and retention; the "last update" date
+  is fixed instead of showing today's date. The data deletion page says what the
+  audit trail keeps. Both pages name the Belgian data protection authority
+  (APD) instead of the CNIL.
+- Help tips: with a mouse, the popover stays open while the pointer moves onto it,
+  so that a link inside it can be reached.
+
+### Removed
+- The Documentation module (tile of the home page, `/docs` pages): the former
+  addresses open the home page with the help panel on the module concerned.
+
+### Fixed
+- Species: "Autre / indéterminé" always closes the list. A species added later
+  went after it; it now goes just before, the order arrows never move "Autre"
+  nor put anything below it, and the server keeps it last whatever order it
+  receives. The deploy moves it back to the end where needed (migration 0024).
+- Audit trail: events sharing the same time (one request, a rebuilt batch) were
+  repeated or shown out of order from one page to the next; the list is now
+  strictly newest first, and an icon reverses it (oldest first), the CSV export
+  included.
+- Deleting a trap type still in use no longer removes its photo.
+
 ## [1.3.0] - 2026-10-09
 
 ### Added
@@ -235,7 +319,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   algorithm-confusion flaws were not reachable; `PyJWKClient` redirect handling
   is fixed.
 
-[Unreleased]: https://github.com/team-dvl/hornet-finder/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/team-dvl/hornet-finder/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/team-dvl/hornet-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/team-dvl/hornet-finder/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/team-dvl/hornet-finder/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/team-dvl/hornet-finder/compare/v1.0.0...v1.1.0

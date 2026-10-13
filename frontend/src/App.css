@@ -388,6 +388,18 @@ button.module-card {
   text-align: start;
 }
 
+/* Main button of an action row that also holds a help tip (no button inside a button) */
+.layer-action-main {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+}
+
 /* Distance column of the nearest nests: aligned figures */
 .nearest-nest-distance {
   min-width: 4rem;
@@ -1324,4 +1336,246 @@ button.module-card {
 
 .year-select-action {
   min-height: 44px;
+}
+
+/* --- Help panel (help/HelpPanel.tsx): the documentation slides in from the
+   right, over the page and over any dialog or sheet (above both, which sit
+   at 1055 and 1065), full width on a phone --- */
+.offcanvas.help-panel {
+  width: 100%;
+  z-index: 1067;
+}
+
+@media (min-width: 576px) {
+  .offcanvas.help-panel {
+    width: 540px;
+    max-width: 100%;
+  }
+}
+
+.offcanvas-backdrop.help-panel-backdrop {
+  z-index: 1066;
+}
+
+.help-panel-header {
+  gap: 0.25rem;
+  padding: calc(0.5rem + env(safe-area-inset-top)) 0.5rem 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.help-panel-header .offcanvas-title {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Close button with a 44 px touch target */
+.help-panel-header .btn-close {
+  box-sizing: content-box;
+  margin: 0;
+  padding: 0.875rem;
+}
+
+.help-toc,
+.help-search {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.help-search {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.help-search .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.help-search-count {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.help-panel-body {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* The section a link points at lights up for a moment */
+.help-panel-body [data-section] {
+  border-radius: 0.5rem;
+  transition: background-color 1.2s;
+}
+
+.help-panel-body [data-section].help-section-flash {
+  background-color: var(--bs-warning-bg-subtle);
+  transition: none;
+}
+
+mark.help-hit {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: #ffe066;
+  color: inherit;
+}
+
+mark.help-hit-current {
+  background: #ff922b;
+  outline: 2px solid #e8590c;
+}
+
+.help-result {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.75rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+}
+
+.help-result:hover,
+.help-result:focus-visible {
+  background: var(--bs-tertiary-bg);
+}
+
+.help-result-path,
+.help-result-snippet {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.help-result-path {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.help-result-snippet {
+  font-size: 0.9rem;
+}
+
+/* "Documentation complète" link closing a help tip's popover */
+.help-tip-more {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 var(--bs-popover-body-padding-x);
+  border: 0;
+  border-top: var(--bs-popover-border-width) solid var(--bs-popover-border-color);
+  border-radius: 0 0 var(--bs-popover-inner-border-radius) var(--bs-popover-inner-border-radius);
+  background: transparent;
+  color: var(--bs-link-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.help-tip-more:hover,
+.help-tip-more:focus-visible {
+  background: var(--bs-tertiary-bg);
+}
+
+/* Audit trail (admin): one event per row, grouped by day */
+.audit-day {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin: 1rem 0 0.25rem;
+}
+
+.audit-row {
+  display: flex;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.5rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: transparent;
+  color: var(--bs-body-color);
+  text-align: start;
+}
+
+.audit-row-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  background: var(--bs-secondary-bg);
+}
+
+.audit-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.audit-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.audit-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.audit-chip,
+.audit-pick {
+  min-height: 2.75rem;
+}
+
+.audit-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin: 1rem 0 0.375rem;
+}
+
+.audit-diff {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+}
+
+.audit-diff-row {
+  padding: 0.5rem 0.625rem;
+  overflow-wrap: anywhere;
+}
+
+.audit-diff-row + .audit-diff-row {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.audit-old {
+  text-decoration: line-through;
+  background: var(--bs-danger-bg-subtle);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+.audit-new {
+  background: var(--bs-success-bg-subtle);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+.audit-ref {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

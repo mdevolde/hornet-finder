@@ -2,7 +2,7 @@ import uuid
 from datetime import timedelta
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.contrib.gis.db import models as geomodels
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -261,12 +261,26 @@ class Species(models.Model):
     photo_source_url = models.URLField(max_length=500, blank=True, default='')
     sort_order = models.IntegerField(default=0)
 
+    # "Autre / indéterminé" (seeded by migration 0009) always closes the list
+    OTHER_SLUG = 'other'
+
     class Meta:
         ordering = ['sort_order', 'name']
         verbose_name_plural = 'species'
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def keep_other_last(cls):
+        """Move "other" after every other species, if anything got past it."""
+        other = cls.objects.filter(slug=cls.OTHER_SLUG).first()
+        if other is None:
+            return
+        last = cls.objects.exclude(pk=other.pk).aggregate(
+            last=models.Max('sort_order'))['last']
+        if last is not None and other.sort_order <= last:
+            cls.objects.filter(pk=other.pk).update(sort_order=last + 1)
 
 
 class Trap(GeolocatedModel):
@@ -320,7 +334,8 @@ class Trap(GeolocatedModel):
         Derive the catches of every reading from what was seen in the trap.
 
         A reading records what the trap holds (`observed_quantity`) and whether
-        it was emptied afterwards. What it left in place is the baseline of the
+        it was emptied afterwards, entirely, partly (`left_quantity` says what
+        stayed) or not at all. What it left in place is the baseline of the
         next reading, whose catches (`quantity`) are what it saw beyond that
         baseline, never below zero (escaped or decayed insects). An emptied
         trap, or one put in service (installation), starts again from zero.
@@ -367,7 +382,11 @@ class Trap(GeolocatedModel):
             # Readings recorded before the question are taken as emptied, as they were
             if first.emptied is False:
                 others_known = bool(first.bycatch_counted)
-                stock = observed if others_known else {HORNET_SPECIES_SLUG: observed.get(HORNET_SPECIES_SLUG, 0)}
+                # A partly emptied trap keeps what the reading says was left
+                left = {event.species.slug: (event.left_quantity if event.left_quantity is not None
+                                             else observed[event.species.slug])
+                        for event in step}
+                stock = left if others_known else {HORNET_SPECIES_SLUG: left.get(HORNET_SPECIES_SLUG, 0)}
                 left_at = first.performed_at
             else:
                 stock, others_known, left_at = {}, True, None
@@ -417,7 +436,8 @@ class TrapEvent(models.Model):
     and the events recorded together share a `batch` and a `performed_at`.
     Such a visit is a reading ("relevé"): what the capture zone holds is counted
     (`observed_quantity`), then removed, or left in place in a trap whose type
-    accumulates (`emptied`). The catches of the reading (`quantity`) are derived
+    accumulates (`emptied`), or partly removed when it could not be emptied
+    entirely (`left_quantity`). The catches of the reading (`quantity`) are derived
     from it, see `Trap.recompute_catches`. The Asian hornet is always recorded,
     at zero if need be, so a reading without any catch still shows in the
     journal and in the statistics. The maintenance actions done during the same
@@ -460,6 +480,10 @@ class TrapEvent(models.Model):
     # Whether the trap was emptied after this reading, the same on every catch
     # event of a batch; always true for a type that does not accumulate
     emptied = models.BooleanField(null=True, blank=True)
+    # What stayed in the trap when it could only be partly emptied (`emptied`
+    # False), set on every catch event of such a batch; NULL otherwise, when
+    # all of it stayed (left in place) or nothing did (emptied)
+    left_quantity = models.PositiveIntegerField(null=True, blank=True)
     # Groups the events of one visit (catches and actions); NULL for a lone event
     batch = models.UUIDField(null=True, blank=True, db_index=True)
     # Whether the other species were counted too during this reading, the same
@@ -482,6 +506,15 @@ class TrapEvent(models.Model):
                                                           bycatch_counted__isnull=True))
                 ),
                 name='trapevent_catch_fields',
+            ),
+            # Only a partly emptied reading leaves something, at most what it saw
+            models.CheckConstraint(
+                condition=(
+                    models.Q(left_quantity__isnull=True)
+                    | models.Q(kind='catch', emptied=False,
+                               left_quantity__lte=models.F('observed_quantity'))
+                ),
+                name='trapevent_left_quantity',
             ),
         ]
 
@@ -643,10 +676,22 @@ class GroupInvitation(models.Model):
 
     @classmethod
     def expire_stale(cls, **filters) -> None:
-        """Mark the pending invitations past their validity as expired."""
-        cls.objects.filter(
-            status=cls.STATUS_PENDING, created_at__lte=timezone.now() - cls.VALIDITY, **filters,
-        ).update(status=cls.STATUS_EXPIRED)
+        """
+        Mark the pending invitations past their validity as expired, each
+        recorded in the audit trail at the moment its validity ended.
+        """
+        from audit import recorder as audit
+
+        with transaction.atomic():
+            stale = list(cls.objects.select_for_update().filter(
+                status=cls.STATUS_PENDING, created_at__lte=timezone.now() - cls.VALIDITY, **filters,
+            ))
+            if not stale:
+                return
+            cls.objects.filter(pk__in=[i.pk for i in stale]).update(status=cls.STATUS_EXPIRED)
+            for invitation in stale:
+                audit.record(None, 'invitation.expired', invitation,
+                             occurred_at=invitation.created_at + cls.VALIDITY)
 
 
 class InvitationThrottle(models.Model):

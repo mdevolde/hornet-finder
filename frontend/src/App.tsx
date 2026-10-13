@@ -4,9 +4,11 @@ import { Container, Alert, Spinner } from 'react-bootstrap'
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context';
-import { Home, MapPage, Nests, Traps, Apiaries, DocsIndex, DocPage, AdminIndex, TrapTypesAdmin, SpeciesAdmin, TagsAdmin, ArchivingAdmin, GroupAdmin, PrivacyPolicy, DataDeletion, Invitations } from './pages';
+import { Home, MapPage, Nests, Traps, Apiaries, AdminIndex, TrapTypesAdmin, SpeciesAdmin, TagsAdmin, ArchivingAdmin, GroupAdmin, PrivacyPolicy, DataDeletion, Invitations } from './pages';
 import { ErrorBoundary, RequireRole } from './components/common';
 import { PageErrorFallback } from './components/layout';
+import DocsRedirect from './help/DocsRedirect';
+import HelpHost from './help/HelpHost';
 import { initIOSViewportFix } from './utils/iosViewportFix';
 import { useUrlCleaner } from './utils/urlCleaner';
 import { useSessionGuard } from './hooks/useSessionGuard';
@@ -17,6 +19,8 @@ import { ADMIN, APP_ROLES, BEEKEEPER, TRAPPER } from './utils/roles';
 const StatsIndex = lazy(() => import('./pages/stats/StatsIndex'));
 const StatDetail = lazy(() => import('./pages/stats/StatDetail'));
 const ExportJob = lazy(() => import('./pages/stats/ExportJob'));
+// Platform admins only: kept out of everyone else's bundle
+const AuditTrail = lazy(() => import('./pages/admin/AuditTrail'));
 const pageFallback = <div className="text-center py-5"><Spinner animation="border" /></div>;
 
 function App() {
@@ -81,6 +85,7 @@ function App() {
   }
 
   return (
+    <>
     <ErrorBoundary resetKey={location.pathname} fallback={<PageErrorFallback />}>
     <Routes>
       <Route path="/" element={<Home />} />
@@ -107,8 +112,9 @@ function App() {
       />
       {/* Former printing page, now a tab of the QR Codes administration */}
       <Route path="/traps/tags" element={<Navigate to="/admin/tags?tab=print" replace />} />
-      <Route path="/docs" element={<DocsIndex />} />
-      <Route path="/docs/:moduleId" element={<DocPage />} />
+      {/* Former documentation pages: the documentation is now the help panel */}
+      <Route path="/docs" element={<DocsRedirect />} />
+      <Route path="/docs/:moduleId" element={<DocsRedirect />} />
       <Route
         path="/admin"
         element={<RequireRole roles={APP_ROLES}><AdminIndex /></RequireRole>}
@@ -132,6 +138,10 @@ function App() {
       {/* Former address of the invitations page */}
       <Route path="/admin/invitations" element={<Navigate to="/admin/group" replace />} />
       <Route
+        path="/admin/audit"
+        element={<RequireRole roles={[ADMIN]}><Suspense fallback={pageFallback}><AuditTrail /></Suspense></RequireRole>}
+      />
+      <Route
         path="/admin/tags"
         element={<RequireRole roles={[TRAPPER, BEEKEEPER, ADMIN]}><TagsAdmin /></RequireRole>}
       />
@@ -144,6 +154,8 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </ErrorBoundary>
+    <HelpHost />
+    </>
   );
 }
 

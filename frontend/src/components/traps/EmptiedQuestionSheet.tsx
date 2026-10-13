@@ -2,11 +2,16 @@ import { ListGroup } from 'react-bootstrap';
 import { HelpTip } from '../common';
 import { BottomSheet } from '../ui';
 
+/** What became of the trap's contents after the reading */
+export type EmptyingAnswer = 'emptied' | 'partly' | 'left';
+
 interface EmptiedQuestionSheetProps {
   show: boolean;
   /** Back to the reading, as if nothing was chosen */
   onHide: () => void;
-  onAnswer: (emptied: boolean) => void;
+  onAnswer: (answer: EmptyingAnswer) => void;
+  /** Offer "partly emptied": not when the trap held nothing to leave */
+  canPartly: boolean;
 }
 
 /**
@@ -14,10 +19,13 @@ interface EmptiedQuestionSheetProps {
  * A question rather than a field of the form, so it cannot be skipped: the
  * answer sets what the next reading counts from.
  */
-export default function EmptiedQuestionSheet({ show, onHide, onAnswer }: EmptiedQuestionSheetProps) {
-  const choices = [
-    { key: 'emptied', icon: 'arrow-counterclockwise', label: 'Vidé', detail: 'Compteurs remis à zéro', value: true },
-    { key: 'left', icon: 'stack', label: 'Laissé en place', detail: 'Compteurs conservés', value: false },
+export default function EmptiedQuestionSheet({ show, onHide, onAnswer, canPartly }: EmptiedQuestionSheetProps) {
+  const choices: { key: EmptyingAnswer; icon: string; label: string; detail: string }[] = [
+    { key: 'emptied', icon: 'arrow-counterclockwise', label: 'Vidé', detail: 'Compteurs remis à zéro' },
+    ...(canPartly
+      ? [{ key: 'partly' as const, icon: 'layers-half', label: 'Vidé en partie', detail: 'Compter ce qui reste' }]
+      : []),
+    { key: 'left', icon: 'stack', label: 'Laissé en place', detail: 'Compteurs conservés' },
   ];
 
   return (
@@ -27,10 +35,12 @@ export default function EmptiedQuestionSheet({ show, onHide, onAnswer }: Emptied
       title={(
         <span className="d-inline-flex align-items-center">
           Le piège a-t-il été vidé ?
-          <HelpTip id="emptied-help" title="Piège vidé ou laissé en place">
+          <HelpTip id="emptied-help" doc="traps#journal" title="Piège vidé ou laissé en place">
             Les nouvelles prises sont déduites de ce que le piège contenait au relevé précédent.
             Un piège laissé en place garde ses insectes : ils ne sont pas comptés une seconde fois
-            au relevé suivant.
+            au relevé suivant. S'il n'a pas pu être vidé entièrement, choisissez « Vidé en partie »
+            et comptez ce qui reste : une estimation vaut mieux que « Vidé » (le reste serait compté
+            deux fois) ou « Laissé en place » (les prises suivantes seraient perdues).
           </HelpTip>
         </span>
       )}
@@ -40,7 +50,7 @@ export default function EmptiedQuestionSheet({ show, onHide, onAnswer }: Emptied
           <ListGroup.Item
             key={choice.key}
             action
-            onClick={() => onAnswer(choice.value)}
+            onClick={() => onAnswer(choice.key)}
             className="d-flex align-items-center gap-3 px-1 py-2"
           >
             <i className={`bi bi-${choice.icon} fs-5 flex-shrink-0`} aria-hidden="true" />

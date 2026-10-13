@@ -81,6 +81,8 @@ export interface TrapEvent {
   observed_quantity: number | null;
   /** On a catch: whether the trap was emptied after the reading, null when unknown */
   emptied: boolean | null;
+  /** On a catch: what stayed in a trap that could only be partly emptied, null otherwise */
+  left_quantity: number | null;
   /** Shared by the events recorded together during one visit (catches and actions) */
   batch: string | null;
   /** On a catch: whether the other species were counted too, null when unknown */
@@ -375,6 +377,8 @@ export interface CatchItem {
   species_slug: string;
   /** What the trap holds: for a trap emptied at every visit, what is taken out */
   quantity: number;
+  /** What stayed in a trap that could only be partly emptied, given for every item then */
+  left?: number | null;
   photo?: File | null;
 }
 
@@ -391,7 +395,7 @@ export const addTrapCatch = createAsyncThunk(
     items: CatchItem[];
     /** Whether the other species were counted, null when not asked */
     bycatch_counted?: boolean | null;
-    /** Whether the trap was emptied; required when its type accumulates, ignored otherwise */
+    /** Whether the trap was emptied (false when partly); required when its type accumulates, ignored otherwise */
     emptied?: boolean | null;
     /** Maintenance done during the same visit */
     actions?: TrapEventKind[];
@@ -401,7 +405,8 @@ export const addTrapCatch = createAsyncThunk(
       form.append('performed_at', performed_at);
       if (comments) form.append('comments', comments);
       form.append('items', JSON.stringify(
-        items.map(({ species_slug, quantity }) => ({ species_slug, quantity })),
+        items.map(({ species_slug, quantity, left }) => (
+          left == null ? { species_slug, quantity } : { species_slug, quantity, left })),
       ));
       if (bycatch_counted !== null) form.append('bycatch_counted', String(bycatch_counted));
       if (emptied !== null) form.append('emptied', String(emptied));

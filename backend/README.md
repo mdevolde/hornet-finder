@@ -37,6 +37,7 @@ A RESTful API built with Django and Django REST Framework for managing hornet de
 - `GET /api/nests/{id}/nearby-apiaries/` - AFSCA numbers of the apiaries within 1 km of the nest, `["9.005.577.599", …]`, each once, sorted by number; apiaries without a number are left out. No distance and no order by distance: they would locate the apiaries. Same rights as the update (apiaries are private)
 - `GET|POST /api/apiaries/` - Apiaries around a position (`lat`, `lon`, `radius`, `mine`) the caller may see, or create one (the caller becomes its owner)
 - `GET|PUT|PATCH|DELETE /api/apiaries/{id}/` - Retrieve, update, or delete a specific apiary
+- `GET|PUT /api/apiaries/{id}/owner/` - Hand an apiary over to another beekeeper. Allowed to platform admins, and to the administrator (`/beekeepers/<id>/admin`) of an association the current owner belongs to; the new owner must belong to that association, and the apiary must be visible to the administrator (theirs, or shared with that association), so an administrator can create an apiary for a member who is not at ease with the app and transfer it. `GET` lists the `groups` to choose from and, with `?group_path=`, their `members` (`guid`, first and last name, never an email). `PUT` takes `owner_guid` and the `group_path` the person was picked from (optional for a platform admin, who may name any known user). The new owner gets a local `User` row if they never signed in. The former owner keeps no access unless the apiary is shared with their group. The apiary representation carries `permissions.change_owner` and `permissions.read`
 - `GET /api/apiaries/managed/` - Apiary manager, paginated (`page`, `page_size` up to 200, default 50). `scope`: `mine` (default), `shared` (apiaries shared with one of the caller's groups, parents of their subgroups included, their own excluded) or `all` (platform admins only). Filters: `group` (path of a group the apiary is shared with), `infestation_level` (`1`, `2`, `3`, or `none` for apiaries not assessed: the level is optional), `q` (number, address, AFSCA number, comments). `ordering`: `infestation_level`, `created_at`, `address`, `id`, `-` prefix for descending order, apiaries not assessed last either way; default `-infestation_level`. No ordering by distance (and no distance shown): it would locate the apiaries
 
 ### Traps
@@ -104,6 +105,17 @@ The emails use the layout of the Keycloak email theme (`auth/themes/velutina/ema
 - `GET /api/me/group-invitations/` - Pending invitations of the caller
 - `POST /api/me/group-invitations/{id}/accept/`, `POST /api/me/group-invitations/{id}/decline/` - Answer one; the new membership shows in the next token
 
+### Audit trail
+
+Business actions (reports, edits, deletions, hand-overs, sharings, delegations, journal entries, QR codes, group memberships, invitations, statistics exports and their downloads) recorded by the `audit` app, in the transaction of the change, append-only (a database trigger refuses `UPDATE`, and `DELETE` outside the retention purge). Platform admins only, read-only. See `doc/AUDIT_TRAIL.md`.
+
+- `GET /api/audit/events/` - Events newest first (`order=asc`: oldest first), paginated by a cursor on (`occurred_at`, `id`) so events sharing a timestamp are neither repeated nor reordered (`cursor`, `page_size` ≤ 200; follow `next`). Filters: `since`, `until` (date, included, or date-time), `actor` (GUIDs), `action`, `domain` (comma-separated), `ref` (`trap:42`, `group:/beekeepers/x`…: every event concerning it), `source` (`api`, `system`, `backfill`), `request` (events of one request), `q` (text in the details). Each event carries `actor_name` (Keycloak, cached 10 minutes, never stored), `actor_deleted` and `people` (`{guid: {name, deleted}}` for every person it names)
+- `GET /api/audit/events/{id}/` - One event
+- `GET /api/audit/events/catalogue/` - Action codes with their domain, domains, sources and `retention_days`
+- `GET /api/audit/events/actors/?q=` - Up to 10 accounts matching a name or an email, to filter on an actor
+- `POST /api/audit/events/export-link/` - Signed link (`url`, `filename`, valid 15 minutes) to the CSV of the events matching `filters` (same names as the list)
+- `GET /api/audit/export/{token}/` - The CSV behind a link (`;`, UTF-8 with BOM, at most 50 000 rows). No JWT: the signature stands for the admin who asked for it, recorded as the author of the export (`audit.exported`)
+
 ### Documentation
 
 - `GET /api/docs/` - Interactive Swagger UI documentation (development only)
@@ -145,6 +157,7 @@ The application requires several environment variables to be configured. These a
 - `KEYCLOAK_*` - Keycloak authentication server configuration
 - `TAG_HMAC_KEYS`, `TAG_HMAC_ACTIVE_INDEX`, `TAG_SITE_ID` - Signing keys of the QR tags, the key new tags are signed with, and the site identifier (see `.env.example` for rotation)
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_SSL` / `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` - Outgoing email. Dev: Mailpit, no TLS nor authentication. Prod: OVH MX Plan, `ssl0.ovh.net:465` with implicit TLS and a full mailbox address as user (only the user and password come from `.env`); without `EMAIL_HOST` nothing is sent and the statistics email link is not offered
+- `AUDIT_RETENTION_DAYS` - Days the audit trail keeps an event (default 365); older events are purged at most once a day, or by `manage.py audit_purge`
 
 Refer to the main project's [docker-compose.yml](../docker-compose.yml) file for the complete list of required environment variables.
 

@@ -32,7 +32,7 @@ export default function TrapsDoc() {
         </Col>
       </Row>
 
-      <section className="mb-4">
+      <section data-section="manager" className="mb-4">
         <h5 className="text-primary">
           <span className="me-2">🗂️</span>
           Le gestionnaire de pièges
@@ -58,7 +58,7 @@ export default function TrapsDoc() {
         </p>
       </section>
 
-      <section className="mb-4">
+      <section data-section="placing" className="mb-4">
         <h5 className="text-primary">
           <span className="me-2">📍</span>
           Placer et déplacer un piège
@@ -81,7 +81,7 @@ export default function TrapsDoc() {
         </p>
       </section>
 
-      <section className="mb-4">
+      <section data-section="qr-code" className="mb-4">
         <h5 className="text-primary">
           <span className="me-2">🏷️</span>
           Le QR Code du piège
@@ -97,7 +97,7 @@ export default function TrapsDoc() {
         </p>
       </section>
 
-      <section className="mb-4">
+      <section data-section="journal" className="mb-4">
         <h5 className="text-primary">
           <span className="me-2">📖</span>
           Le journal du piège
@@ -116,15 +116,18 @@ export default function TrapsDoc() {
           <li><strong>Relevé d'un piège à accumulation</strong> (harpe, nasse, piège létal... selon le
             type) : les prises restent dans le piège d'un relevé à l'autre. On compte alors tout ce
             qu'il contient, en partant des compteurs laissés au relevé précédent, puis l'on indique
-            s'il a été <em>vidé</em> ou <em>laissé en place</em> ; l'application en déduit les
-            nouvelles prises, seules comptées dans le total et les statistiques</li>
+            s'il a été <em>vidé</em>, <em>vidé en partie</em> ou <em>laissé en place</em> ;
+            l'application en déduit les nouvelles prises, seules comptées dans le total et les
+            statistiques. <em>Vidé en partie</em>, quand une partie des insectes n'a pas pu être
+            retirée, demande ce qui reste de chaque espèce (compteurs à zéro, une estimation
+            suffit) : le relevé suivant part de ce reste</li>
           <li><strong>Inspection, nettoyage, recharge, réparation</strong> : l'entretien courant, seul</li>
           <li><strong>Installation</strong> : remet le piège en service, à la date indiquée</li>
           <li><strong>Retrait</strong> : marque le piège comme remisé — il reste sur la carte, en gris</li>
         </ul>
       </section>
 
-      <section className="mb-4">
+      <section data-section="delegation" className="mb-4">
         <h5 className="text-primary">
           <span className="me-2">👁️</span>
           Visibilité et délégation
@@ -144,7 +147,7 @@ export default function TrapsDoc() {
         </p>
       </section>
 
-      <section>
+      <section data-section="permissions">
         <h5 className="text-primary">Qui peut faire quoi ?</h5>
         <ul className="mb-0">
           <li><strong>Propriétaire</strong> (piégeur ou apiculteur) : tout sur ses pièges</li>

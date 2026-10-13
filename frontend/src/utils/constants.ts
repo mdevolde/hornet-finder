@@ -26,12 +26,12 @@ export const HORNET_RETURN_ZONE_ABSOLUTE_MAX_DISTANCE_M = 3000;
 export const HORNET_FLIGHT_SPEED_M_PER_MIN = 100;
 
 /**
- * Géolocalisation par défaut de l'application (région de Namur, Belgique)
+ * Géolocalisation par défaut de l'application (église de Vedrin Centre, Namur, Belgique)
  * Utilisée comme centre de carte et position utilisateur par défaut
  */
 export const DEFAULT_GEOLOCATION = {
-  latitude: 50.491064,
-  longitude: 4.884473
+  latitude: 50.5034,
+  longitude: 4.8728441
 };
 
 /**
@@ -59,6 +59,18 @@ export const MAX_ZOOM = 21;
  * Au-delà de cette valeur, Leaflet interpolera les tuiles existantes
  */
 export const MAX_NATIVE_ZOOM = 18;
+
+/** Tile sources of the base maps (satellite: Esri World Imagery, also allowed in the nginx CSP) */
+export const BASEMAPS = {
+  plan: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+  },
+} as const;
 
 /**
  * Distance en pixels pour considérer qu'il y a chevauchement d'objets sur la carte

@@ -7,6 +7,13 @@ Cette documentation décrit l'organisation des composants React dans le projet H
 ```
 src/
 ├── components/
+│   ├── audit/           # Journal d'audit (admins de plateforme, page pages/admin/AuditTrail.tsx)
+│   │   ├── AuditDomainIcon.tsx
+│   │   ├── AuditEventModal.tsx
+│   │   ├── AuditEventRow.tsx
+│   │   ├── AuditExportSheet.tsx
+│   │   ├── AuditFiltersSheet.tsx
+│   │   └── index.ts
 │   ├── forms/           # Composants de formulaires et sélecteurs
 │   │   ├── AddItemSelector.tsx
 │   │   └── index.ts
@@ -72,7 +79,13 @@ Contient les composants de formulaires et sélecteurs d'éléments :
 Composants de la page de garde (`pages/Home.tsx`) :
 - `ModuleCard.tsx` : Tuile du menu des modules (définis dans `config/modules.ts`)
 
-Les pages de documentation vivent dans `pages/docs/` : une page par module, enregistrée dans `pages/docs/registry.ts` (`DOC_PAGES`). Un module sans entrée affiche « Documentation à venir ».
+### `/help/`
+Documentation des modules, affichée dans un panneau (offcanvas à droite, au-dessus de la page et de tout dialogue) et non dans des pages :
+- `*Doc.tsx` : une documentation par module ; chaque `<section data-section="…">` est une ancre
+- `registry.ts` (`DOC_PAGES`) et `anchors.ts` (`DOC_SECTIONS`, types `DocRef`) : un nouveau module y est déclaré dans les deux ; un module sans documentation s'affiche « À venir » dans le sommaire
+- `helpStore.ts` : `openHelp('traps#journal')` ouvre le panneau depuis n'importe où (`HelpTip doc="…"`, entrée « Aide » du menu) ; `HelpHost.tsx` le charge à la demande
+- `HelpPanel.tsx` : sommaire des modules, documentation d'un module (liste « Aller à », recherche surlignée dans la page), recherche dans toute l'aide (`searchDocs.ts`)
+- `DocsRedirect.tsx` : anciennes adresses `/docs` et `/docs/:module`
 
 ### `/components/layout/`
 Composants de mise en page de l'application :
@@ -124,6 +137,15 @@ Briques partagées, à utiliser plutôt que les composants Bootstrap bruts :
 - `ConfirmDialog.tsx` : Confirmation courte, qui remplace le dialogue d'origine au lieu de s'y empiler
 - `FieldRow.tsx` : Ligne « libellé — valeur » d'une fiche
 - `IconButton.tsx` : Bouton réduit à son icône sur téléphone, libellé en `aria-label` et infobulle
+
+### `/components/audit/`
+Journal d'audit, réservé aux admins de plateforme (page `pages/admin/AuditTrail.tsx`, chargée à la demande, route `/admin/audit`) :
+- `AuditEventRow.tsx` : une ligne de la liste (action, objet, auteur, heure), qui ouvre le détail
+- `AuditEventModal.tsx` : détail en `AppModal` (changements avant → après, état d'un objet supprimé, objets concernés) et liens vers l'historique de l'objet, de la personne ou de la requête
+- `AuditFiltersSheet.tsx` : filtres en `BottomSheet`, appliqués au fil des choix et gardés dans l'adresse (`utils/auditFilters.ts`)
+- `AuditExportSheet.tsx` : lien signé du CSV, préparé à l'ouverture (comme les exports statistiques)
+- Libellés français des actions, objets et champs : `utils/auditLabels.ts` ; appels à l'API : `utils/auditApi.ts`
+- Entrée « Historique » des fiches (nid, frelon, rucher, piège) : `hooks/useHistoryAction.ts`
 
 ### `/components/stats/`
 Module Statistiques (pages dans `pages/stats/`, chargées à la demande) :

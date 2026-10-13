@@ -18,7 +18,11 @@ import { useUserPermissions } from '../../hooks/useUserPermissions';
 import { UserAvatar } from '../common';
 import { useAvatarUrl } from '../../hooks/useAvatarUrl';
 import { APP_VERSION, IS_RELEASE } from '../../utils/version';
+import { openInstallSheet, useInstallState } from '../../utils/installPrompt';
+import { openHelp } from '../../help/helpStore';
+import { ACTION_ICONS } from '../../utils/icons';
 import ReachabilityBanner from './ReachabilityBanner';
+import InstallSheet from './InstallSheet';
 
 const SITE_NAME = `Velutina${import.meta.env.DEV ? ' DEV' : ''}`;
 
@@ -33,6 +37,7 @@ export default function NavbarComponent() {
   const crumbs = getBreadcrumbs(location.pathname);
   const { roles } = useUserPermissions();
   const modules = visibleModules(roles).filter((module) => module.path);
+  const { available: installAvailable } = useInstallState();
   const [showUserModal, setShowUserModal] = useState(false);
   const avatarUrl = useAvatarUrl();
   const dispatch = useAppDispatch();
@@ -142,6 +147,32 @@ export default function NavbarComponent() {
                 {module.shortTitle}
               </Nav.Link>
             ))}
+            <Nav.Link
+              as="button"
+              type="button"
+              onClick={() => {
+                close();
+                openHelp();
+              }}
+              className="navbar-module-link text-start"
+            >
+              <i className={`bi bi-${ACTION_ICONS.docs} me-2 d-lg-none module-icon`} data-tone="plain" aria-hidden="true" />
+              Aide
+            </Nav.Link>
+            {installAvailable && (
+              <Nav.Link
+                as="button"
+                type="button"
+                onClick={() => {
+                  close();
+                  openInstallSheet();
+                }}
+                className="navbar-module-link text-start"
+              >
+                <i className="bi bi-download me-2 d-lg-none module-icon" aria-hidden="true" />
+                Installer l’app
+              </Nav.Link>
+            )}
           </Nav>
 
           <Nav className="align-items-lg-center navbar-account">
@@ -202,6 +233,7 @@ export default function NavbarComponent() {
       />
 
       <ReachabilityBanner />
+      <InstallSheet signedIn={auth.isAuthenticated} />
     </Navbar>
   );
 }

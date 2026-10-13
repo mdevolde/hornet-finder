@@ -7,6 +7,7 @@ import {
   type Trap, type TrapEvent, type TrapEventKind,
 } from '../../store/store';
 import { useUserPermissions } from '../../hooks/useUserPermissions';
+import { useHistoryAction } from '../../hooks/useHistoryAction';
 import { AuthImage, ClampedText } from '../common';
 import { ConfirmationModal } from '../modals';
 import { AppModal, FieldRow, IconButton, SheetActions } from '../ui';
@@ -140,7 +141,8 @@ function isReading(entry: TrapEvent[]): boolean {
  * One visit: a small card per species found, with its new catches, then the
  * actions done at the same time. A reading without any catch says so in its
  * title. In a trap that accumulates, a card also tells what the trap held when
- * that differs from the new catches, and the entry whether it was emptied.
+ * that differs from the new catches and what stayed in a partly emptied trap,
+ * and the entry whether it was emptied.
  */
 function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
   events: TrapEvent[];
@@ -152,6 +154,12 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
   const catches = events.filter((event) => event.kind === 'catch');
   const actions = events.filter((event) => event.kind !== 'catch');
   const first = catches[0];
+  const partly = catches.some((event) => event.left_quantity != null);
+  const emptying = first.emptied
+    ? { icon: 'arrow-counterclockwise', label: 'Vidé' }
+    : partly
+      ? { icon: 'layers-half', label: 'Vidé en partie' }
+      : { icon: 'stack', label: 'Laissé en place' };
   const info = eventKindInfo('catch');
   const total = catches.reduce((sum, event) => sum + (event.quantity ?? 0), 0);
   const comments = events.map((event) => event.comments).filter(Boolean);
@@ -210,6 +218,11 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
                   {held} présent{(held ?? 0) > 1 ? 's' : ''}
                 </div>
               )}
+              {event.left_quantity != null && (
+                <div className="text-truncate text-muted" style={{ fontSize: '0.7rem' }}>
+                  {event.left_quantity} resté{event.left_quantity > 1 ? 's' : ''}
+                </div>
+              )}
             </div>
           );
         })}
@@ -218,8 +231,8 @@ function VisitRow({ events, accumulates, canDelete, onDelete, onPreview }: {
         <div className="journal-detail small text-muted d-flex flex-wrap column-gap-3 mt-1">
           {(accumulates || first.emptied === false) && first.emptied !== null && (
             <span>
-              <i className={`bi bi-${first.emptied ? 'arrow-counterclockwise' : 'stack'} me-1`} aria-hidden="true" />
-              {first.emptied ? 'Vidé' : 'Laissé en place'}
+              <i className={`bi bi-${emptying.icon} me-1`} aria-hidden="true" />
+              {emptying.label}
             </span>
           )}
           {actions.map((action) => {
@@ -273,6 +286,7 @@ export default function TrapInfoPopup({
   const auth = useAuth();
   const detailed = useAppSelector(selectSelectedTrap);
   const { canEditTrap, canActOnTrap, isAdmin, userGuid } = useUserPermissions();
+  const historyAction = useHistoryAction();
 
   const [sub, setSub] = useState<SubDialog | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -358,6 +372,7 @@ export default function TrapInfoPopup({
 
   const preview = (url: string) => setSub({ kind: 'photo', url });
   const canAddHere = auth.isAuthenticated && onAddAtLocation;
+  const history = historyAction(`trap:${current.id}`, `Piège #${current.id}`);
 
   return (
     <>
@@ -405,7 +420,7 @@ export default function TrapInfoPopup({
           </div>
         </div>
 
-        {auth.isAuthenticated && (mayAct || mayEdit || canAddHere || onLocate) && (
+        {auth.isAuthenticated && (mayAct || mayEdit || canAddHere || onLocate || history) && (
           <SheetActions
             className="mb-2"
             more={[
@@ -416,6 +431,7 @@ export default function TrapInfoPopup({
                 label: 'Ajouter à cette position',
                 onClick: () => onAddAtLocation(current.latitude, current.longitude),
               },
+              history,
               mayEdit && { icon: ACTION_ICONS.delete, label: 'Supprimer', tone: 'danger', onClick: () => setSub({ kind: 'delete' }) },
             ]}
           >

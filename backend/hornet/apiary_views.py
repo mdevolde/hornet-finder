@@ -2,7 +2,9 @@
 
 import logging
 import re
+import uuid
 
+from django.db import transaction
 from django.db.models import F, Prefetch, Q, Value
 from django.db.models.functions import Replace
 
@@ -15,12 +17,16 @@ from rest_framework.response import Response
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
+from hornet_finder_api import utils as keycloak
 from hornet_finder_api.authentication import HasAnyRole, JWTBearerAuthentication
+from audit import recorder as audit
 
 from . import apiary_permissions as perms
 from .afsca import afsca_digits
 from .models import Apiary, ApiaryGroupPermission, User
 from .serializers import ApiarySerializer
+from .group_views import _Roster, _full_name
+from .invitation_views import _keycloak, _sort_key, is_beekeeper_group
 from .trap_permissions import local_user
 from .trap_views import _delete_files, _group_choices, _group_for_path, _store_photo
 from .views import GeographicFilterMixin, geographic_list_schema
@@ -184,11 +190,14 @@ class ApiaryViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = local_user(self.request)
-        apiary = serializer.save(created_by=user, owner=user)
-        self._attach_photo(apiary)
+        with transaction.atomic():
+            apiary = serializer.save(created_by=user, owner=user)
+            self._attach_photo(apiary)
+            audit.record(self.request, 'apiary.created', apiary, changes=audit.snapshot(apiary))
 
     def perform_update(self, serializer):
-        self._attach_photo(serializer.save())
+        with audit.track(self.request, 'apiary.updated', serializer.instance):
+            self._attach_photo(serializer.save())
 
     def _attach_photo(self, apiary):
         uploaded = self.request.FILES.get('photo')
@@ -209,8 +218,16 @@ class ApiaryViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         apiary = self.get_object()
         self._require(apiary, perms.DELETE, "You do not have permission to delete this apiary.")
-        _delete_files(apiary.photo, apiary.photo_thumbnail)
-        return super().destroy(request, *args, **kwargs)
+        files = (apiary.photo, apiary.photo_thumbnail)
+        with transaction.atomic():
+            changes = {**audit.snapshot(apiary), 'shared_with': [
+                share.group.path for share in apiary.apiarygrouppermission_set.select_related('group')]}
+            response = super().destroy(request, *args, **kwargs)
+            audit.record(request, 'apiary.deleted', ('apiary', apiary.pk), changes=changes,
+                         label=audit.label_of(apiary),
+                         refs=[audit.ref('group', path) for path in changes['shared_with']])
+        _delete_files(*files)
+        return response
 
     @extend_schema(
         request={'multipart/form-data': {'type': 'object',
@@ -223,14 +240,18 @@ class ApiaryViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
         apiary = self.get_object()
         self._require(apiary, perms.UPDATE, "You do not have permission to update this apiary.")
         if request.method == 'DELETE':
+            if not apiary.photo:
+                return Response(self.get_serializer(apiary).data)
             _delete_files(apiary.photo, apiary.photo_thumbnail)
-            apiary.photo = None
-            apiary.photo_thumbnail = None
-            apiary.save(update_fields=['photo', 'photo_thumbnail'])
+            with audit.track(request, 'apiary.photo_removed', apiary, fields=['photo']):
+                apiary.photo = None
+                apiary.photo_thumbnail = None
+                apiary.save(update_fields=['photo', 'photo_thumbnail'])
         else:
             if not request.FILES.get('photo'):
                 raise DRFValidationError({'photo': "No file received."})
-            self._attach_photo(apiary)
+            with audit.track(request, 'apiary.photo_set', apiary, fields=['photo']):
+                self._attach_photo(apiary)
         return Response(self.get_serializer(apiary).data)
 
     # -- sharing -------------------------------------------------------------
@@ -269,7 +290,12 @@ class ApiaryViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
             group_path = request.query_params.get('group_path')
             if not group_path:
                 raise DRFValidationError({'group_path': "This field is required."})
-            ApiaryGroupPermission.objects.filter(apiary=apiary, group__path=group_path).delete()
+            with transaction.atomic():
+                deleted, _ = ApiaryGroupPermission.objects.filter(
+                    apiary=apiary, group__path=group_path).delete()
+                if deleted:
+                    audit.record(request, 'apiary.unshared', apiary, changes={'group': group_path},
+                                 refs=[audit.ref('group', group_path)])
             return self._fresh(apiary)
 
         group_path = request.data.get('group_path')
@@ -278,32 +304,109 @@ class ApiaryViewSet(GeographicFilterMixin, viewsets.ModelViewSet):
         if allowed is not None and group_path not in allowed:
             raise PermissionDenied(f"You cannot share this apiary with {group_path}.")
         can_update = str(request.data.get('can_update', False)).lower() in ('true', '1')
-        ApiaryGroupPermission.objects.update_or_create(
-            apiary=apiary, group=_group_for_path(group_path),
-            # Sharing is about seeing and possibly maintaining; deleting stays with the owner
-            defaults={'can_read': True, 'can_update': can_update, 'can_delete': False},
-        )
+        with transaction.atomic():
+            group = _group_for_path(group_path)
+            previous = ApiaryGroupPermission.objects.filter(apiary=apiary, group=group).first()
+            ApiaryGroupPermission.objects.update_or_create(
+                apiary=apiary, group=group,
+                # Sharing is about seeing and possibly maintaining; deleting stays with the owner
+                defaults={'can_read': True, 'can_update': can_update, 'can_delete': False},
+            )
+            if previous is None:
+                audit.record(request, 'apiary.shared', apiary,
+                             changes={'group': group_path, 'can_update': can_update},
+                             refs=[audit.ref('group', group_path)])
+            elif previous.can_update != can_update:
+                audit.record(request, 'apiary.share_changed', apiary,
+                             changes={'group': group_path, 'can_update': [previous.can_update, can_update]},
+                             refs=[audit.ref('group', group_path)])
         return self._fresh(apiary)
 
     @extend_schema(
+        parameters=[OpenApiParameter(name='group_path', type=OpenApiTypes.STR,
+                                     location=OpenApiParameter.QUERY, required=False,
+                                     description='GET: the group whose members are listed')],
         request={'application/json': {'type': 'object',
-                                      'properties': {'owner_guid': {'type': 'string'}}}},
+                                      'properties': {'owner_guid': {'type': 'string'},
+                                                     'group_path': {'type': 'string'}}}},
         responses={200: ApiarySerializer},
     )
-    @action(detail=True, methods=['put'], url_path='owner')
+    @action(detail=True, methods=['get', 'put'], url_path='owner')
     def owner(self, request, pk=None):
-        """Hand an apiary over to another beekeeper. Platform admins only."""
+        """
+        Hand an apiary over to another beekeeper: a platform admin, or the
+        administrator of a group the owner belongs to, to a member of that group.
+
+        GET: the groups to choose from and, with `?group_path=`, their members
+        (first and last name, never an email). PUT: `owner_guid`, and the
+        `group_path` the person was picked from (optional for a platform admin).
+        """
         apiary = self.get_object()
-        if not perms.is_platform_admin(request.user):
-            raise PermissionDenied("Only a platform administrator can change the owner.")
+        allowed = perms.owner_transfer_groups(request, apiary)
+        if allowed is not None and not allowed:
+            raise PermissionDenied("You cannot change the owner of this apiary.")
+
+        if request.method == 'GET':
+            return Response(self._transfer_choices(request, apiary, allowed))
+
         owner_guid = request.data.get('owner_guid')
         if not owner_guid:
             raise DRFValidationError({'owner_guid': "This field is required."})
-        new_owner = User.objects.filter(guid=owner_guid).first()
-        if new_owner is None:
-            raise DRFValidationError({'owner_guid': "Unknown user."})
+        group_path = request.data.get('group_path')
+        if group_path or allowed is not None:
+            new_owner = self._member_user(group_path, owner_guid, allowed)
+        else:
+            new_owner = User.objects.filter(guid=owner_guid).first()
+            if new_owner is None:
+                raise DRFValidationError({'owner_guid': "Unknown user."})
         previous = apiary.owner_id
-        apiary.owner = new_owner
-        apiary.save(update_fields=['owner'])
-        logger.info("Apiary %s reassigned from %s to %s", apiary.id, previous, new_owner.guid)
-        return Response(self.get_serializer(apiary).data)
+        with audit.track(request, 'apiary.owner_changed', apiary, fields=['owner']) as tracked:
+            tracked.refs = [audit.ref('user', guid) for guid in (previous, new_owner.guid) if guid]
+            if group_path:
+                # The association the new owner was picked from
+                tracked.refs.append(audit.ref('group', group_path))
+            apiary.owner = new_owner
+            apiary.save(update_fields=['owner'])
+        logger.info("Apiary %s reassigned from %s to %s by %s", apiary.id, previous,
+                    new_owner.guid, getattr(request.user, 'guid', None))
+        return self._fresh(apiary)
+
+    def _transfer_choices(self, request, apiary, allowed):
+        groups = _group_choices(allowed)
+        group_path = request.query_params.get('group_path', '').strip()
+        data = {'groups': groups, 'owner_guid': str(apiary.owner_id) if apiary.owner_id else None}
+        if group_path:
+            self._check_transfer_group(group_path, allowed)
+            roster = _Roster(group_path, self._keycloak_group(group_path))
+            data['members'] = sorted(
+                ({'guid': guid, 'name': _full_name(user)} for guid, user in roster.users.items()),
+                key=lambda m: _sort_key(m['name'] or '~'),
+            )
+        return data
+
+    @staticmethod
+    def _check_transfer_group(group_path, allowed):
+        if not is_beekeeper_group(group_path) or (allowed is not None and group_path not in allowed):
+            raise PermissionDenied(f"You cannot hand this apiary over within {group_path}.")
+
+    @staticmethod
+    def _keycloak_group(group_path):
+        group = _keycloak(keycloak.get_group_by_path, group_path)
+        if group is None:
+            raise DRFValidationError({'group_path': "Unknown group."})
+        return group
+
+    def _member_user(self, group_path, owner_guid, allowed):
+        """The local user of a member of `group_path`, created if they never signed in."""
+        if not group_path:
+            raise DRFValidationError({'group_path': "This field is required."})
+        self._check_transfer_group(group_path, allowed)
+        try:
+            guid = str(uuid.UUID(str(owner_guid)))
+        except ValueError:
+            raise DRFValidationError({'owner_guid': "Invalid identifier."})
+        roster = _Roster(group_path, self._keycloak_group(group_path))
+        if guid not in roster:
+            raise DRFValidationError({'owner_guid': "This person is not a member of the group."})
+        user, _ = User.objects.get_or_create(guid=guid)
+        return user

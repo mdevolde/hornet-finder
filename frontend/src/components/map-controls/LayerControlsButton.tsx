@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMap } from 'react-leaflet';
 import { Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -30,6 +31,8 @@ import {
   selectMapAnalysis,
   setAnalysisLayer,
   setAnalysisPeriod,
+  selectBasemap,
+  setBasemap,
   type AnalysisPeriod,
 } from '../../store/store';
 import { HelpTip } from '../common';
@@ -37,6 +40,7 @@ import { analysisParams } from '../stats/statParams';
 import { selectColorFilters } from '../../store/slices/hornetsSlice';
 import { BottomSheet } from '../ui';
 import { OBJECT_ICONS } from '../../utils/icons';
+import { DEFAULT_MAP_VIEW, clearMapView } from '../../utils/mapMemory';
 import HornetColorFilterPanel from './HornetColorFilterPanel';
 
 interface LayerControlsButtonProps {
@@ -72,6 +76,7 @@ export default function LayerControlsButton({
 }: LayerControlsButtonProps) {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
+  const map = useMap();
   const auth = useAuth();
   const { isAdmin, canAddApiary, roles } = useUserPermissions();
   const analysis = useAppSelector(selectMapAnalysis);
@@ -82,6 +87,7 @@ export default function LayerControlsButton({
     ? `/stats/traps-${analysis.layer}?${new URLSearchParams(analysisParams(analysis.period, analysis.year))}`
     : '';
   
+  const basemap = useAppSelector(selectBasemap);
   const showHornets = useAppSelector(selectShowHornets);
   const showReturnZones = useAppSelector(selectShowReturnZones);
   const showApiaries = useAppSelector(selectShowApiaries);
@@ -110,6 +116,9 @@ export default function LayerControlsButton({
       </button>
 
       <BottomSheet show={open} onHide={() => setOpen(false)} title="Couches">
+        <LayerSwitch id="basemap-plan" icon="🗺️" label="Plan" checked={basemap === 'plan'} onChange={() => dispatch(setBasemap('plan'))} />
+        <LayerSwitch id="basemap-satellite" icon="🛰️" label="Satellite" checked={basemap === 'satellite'} onChange={() => dispatch(setBasemap('satellite'))} />
+        <div className="border-top my-2" />
         <LayerSwitch id="layer-hornets" icon={OBJECT_ICONS.hornet} label="Frelons" checked={showHornets} onChange={() => dispatch(toggleHornets())} />
         {showHornets && (
           <LayerSwitch id="layer-zones" icon="🔺" label="Zones de retour" checked={showReturnZones} onChange={() => dispatch(toggleReturnZones())} sub />
@@ -152,7 +161,7 @@ export default function LayerControlsButton({
           <div className="border-top mt-2 pt-2">
             <div className="small text-muted d-flex align-items-center">
               Analyse du piégeage
-              <HelpTip id="layer-analysis-help" title="Analyse du piégeage">
+              <HelpTip id="layer-analysis-help" doc="stats#coverage" title="Analyse du piégeage">
                 Une grille de mailles de 250 m. La couverture montre la part de chaque maille à
                 moins de 250 m d&apos;un piège en service ; la pression, les frelons asiatiques par
                 piège et par semaine, lissés. Seuls les pièges que vous voyez sont comptés.
@@ -212,6 +221,26 @@ export default function LayerControlsButton({
             }}
           />
         )}
+
+        <div className="layer-switch">
+          <button
+            type="button"
+            className="layer-action-main"
+            onClick={() => {
+              clearMapView();
+              map.setView([DEFAULT_MAP_VIEW.latitude, DEFAULT_MAP_VIEW.longitude], DEFAULT_MAP_VIEW.zoom);
+              setOpen(false);
+            }}
+          >
+            <span className="me-2" aria-hidden="true">📍</span>
+            Position par défaut
+          </button>
+          <HelpTip id="layer-default-position-help" title="Position par défaut">
+            Recentre la carte sur la position de départ et oublie l&apos;endroit où vous l&apos;aviez
+            laissée. La carte se rouvre sinon là où vous l&apos;avez déplacée pour la dernière fois
+            (pendant 30 jours, sur cet appareil).
+          </HelpTip>
+        </div>
 
         {!auth.isAuthenticated && (
           <p className="text-muted small mt-2 mb-0">Connectez-vous pour voir plus de couches.</p>

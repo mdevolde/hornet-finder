@@ -4,9 +4,10 @@ import { useAuth } from 'react-oidc-context';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { Apiary, updateApiary, selectApiaryById, deleteApiary } from '../../store/slices/apiariesSlice';
 import { ConfirmationModal } from '../modals';
+import { useHistoryAction } from '../../hooks/useHistoryAction';
 import InfestationLevelInput, { InfestationLevel } from '../common/InfestationLevelInput';
 import { AfscaNumber, AuthImage, ClampedText } from '../common';
-import { ApiaryFormModal, ApiarySharingPanel } from '../apiaries';
+import { ApiaryFormModal, ApiaryOwnerModal, ApiarySharingPanel } from '../apiaries';
 import { AppModal, FieldRow, IconButton, SheetActions } from '../ui';
 import { ACTION_ICONS, OBJECT_ICONS } from '../../utils/icons';
 import { formatDate } from '../../utils/format';
@@ -24,7 +25,7 @@ interface ApiaryInfoPopupProps {
 }
 
 /** Dialog shown in place of the sheet (one dialog at a time) */
-type SubDialog = 'edit' | 'delete' | 'photo';
+type SubDialog = 'edit' | 'delete' | 'photo' | 'owner';
 
 /** Detail of an apiary; what the user may do comes from the backend (`permissions`). */
 export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation, onLocate }: ApiaryInfoPopupProps) {
@@ -33,6 +34,7 @@ export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation,
   const [sub, setSub] = useState<SubDialog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const historyAction = useHistoryAction();
 
   // The store copy follows the edits made from this sheet
   const stored = useAppSelector((state) => selectApiaryById(state, apiary?.id));
@@ -42,8 +44,10 @@ export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation,
 
   const mayEdit = Boolean(current.permissions?.update);
   const mayDelete = Boolean(current.permissions?.delete);
+  const mayChangeOwner = Boolean(current.permissions?.change_owner);
   const canAddHere = auth.isAuthenticated && onAddAtLocation;
   const closeSub = () => setSub(null);
+  const history = historyAction(`apiary:${apiaryId}`, `Rucher #${apiaryId}`);
 
   const handleLevel = async (level: InfestationLevel | null) => {
     const value = level ? LEVEL_VALUES[level] : null;
@@ -116,7 +120,7 @@ export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation,
         </div>
         {current.comments && <p className="small mt-2 mb-0">{current.comments}</p>}
 
-        {(mayEdit || canAddHere || mayDelete || onLocate) && (
+        {(mayEdit || canAddHere || mayDelete || mayChangeOwner || onLocate || history) && (
           <SheetActions
             className="mt-3"
             more={[
@@ -126,6 +130,8 @@ export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation,
                 label: 'Ajouter à cette position',
                 onClick: () => onAddAtLocation(current.latitude, current.longitude),
               },
+              mayChangeOwner && { icon: ACTION_ICONS.transfer, label: 'Changer de propriétaire', onClick: () => setSub('owner') },
+              history,
               mayDelete && { icon: ACTION_ICONS.delete, label: 'Supprimer', tone: 'danger', onClick: () => setSub('delete') },
             ]}
           >
@@ -144,6 +150,15 @@ export default function ApiaryInfoPopup({ show, onHide, apiary, onAddAtLocation,
       </AppModal>
 
       {sub === 'edit' && <ApiaryFormModal onHide={closeSub} apiary={current} />}
+
+      {sub === 'owner' && (
+        <ApiaryOwnerModal
+          onHide={closeSub}
+          apiary={{ ...current, id: apiaryId }}
+          // Whoever hands the apiary over may no longer see it: close its sheet
+          onTransferred={onHide}
+        />
+      )}
 
       <ConfirmationModal
         show={sub === 'delete'}

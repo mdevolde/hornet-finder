@@ -9,9 +9,9 @@ export { selectShowReturnZones, selectShowHornets, selectHornetsLoading, selectS
 export type { Hornet, GeolocationParams, ArchiveFilterParams } from './slices/hornetsSlice';
 
 // Export des actions et thunks du slice apiaries
-export { fetchApiaries, createApiary, updateApiary, deleteApiary, deleteApiaryPhoto, fetchApiarySharing, shareApiary, unshareApiary, clearError as clearApiariesError, clearApiaries, toggleApiaries, setShowApiaries, toggleApiaryCircles, toggleOnlyMyApiaries, toggleCircleHighlight, clearAllHighlights, fetchManagedApiaries, fetchApiaryDetail, MANAGED_APIARIES_PAGE_SIZE } from './slices/apiariesSlice';
+export { fetchApiaries, createApiary, updateApiary, deleteApiary, deleteApiaryPhoto, fetchApiarySharing, shareApiary, unshareApiary, fetchApiaryOwnerChoices, transferApiary, clearError as clearApiariesError, clearApiaries, toggleApiaries, setShowApiaries, toggleApiaryCircles, toggleOnlyMyApiaries, toggleCircleHighlight, clearAllHighlights, fetchManagedApiaries, fetchApiaryDetail, MANAGED_APIARIES_PAGE_SIZE } from './slices/apiariesSlice';
 export { selectApiaries, selectApiariesLoading, selectApiariesError, selectShowApiaries, selectShowApiaryCircles, selectHighlightedCircles, selectOnlyMyApiaries, selectManagedApiaries } from './slices/apiariesSlice';
-export type { Apiary, ApiaryFormValues, ApiarySharingInfo, ApiaryGroupGrant, ApiaryScope, ApiaryOrdering, ManagedApiariesQuery } from './slices/apiariesSlice';
+export type { Apiary, ApiaryFormValues, ApiarySharingInfo, ApiaryOwnerChoices, ApiaryGroupGrant, ApiaryScope, ApiaryOrdering, ManagedApiariesQuery } from './slices/apiariesSlice';
 
 // Export des actions et thunks du slice nests
 export { fetchNests, fetchNestsDestroyedPublic, createNest, updateNest, addNestPhotos, deleteNestPhoto, fetchNearbyApiaries, fetchNestsAround, NEAREST_NESTS_RADIUS_KM, deleteNest, archiveNest, clearError as clearNestsError, clearNests, toggleNests, setShowNests, toggleShowArchived as toggleShowArchivedNests } from './slices/nestsSlice';
@@ -40,9 +40,9 @@ export type {
 } from './slices/trapsSlice';
 
 // Export des actions et selectors du slice map
-export { setMapCenter, setZoom, setGeolocationLoading, setGeolocationError, setIsAdmin, updateMapViewport, initializeGeolocation, setLastFetchedArea, setAnalysisLayer, setAnalysisPeriod } from './slices/mapSlice';
-export { selectMapCenter, selectZoom, selectSearchRadius, selectGeolocationLoading, selectGeolocationError, selectIsInitialized, selectIsAdmin, selectLastFetchedArea, selectMapAnalysis } from './slices/mapSlice';
-export type { MapPosition, MapState, MapBounds, AnalysisLayer, AnalysisPeriod, MapAnalysis } from './slices/mapSlice';
+export { setMapCenter, setZoom, setGeolocationLoading, setGeolocationError, setIsAdmin, updateMapViewport, initializeGeolocation, setLastFetchedArea, setAnalysisLayer, setAnalysisPeriod, setBasemap } from './slices/mapSlice';
+export { selectMapCenter, selectZoom, selectSearchRadius, selectGeolocationLoading, selectGeolocationError, selectIsInitialized, selectIsAdmin, selectLastFetchedArea, selectMapAnalysis, selectBasemap } from './slices/mapSlice';
+export type { MapPosition, MapState, MapBounds, AnalysisLayer, AnalysisPeriod, MapAnalysis, Basemap } from './slices/mapSlice';
 
 // Export des actions et selectors du slice profile
 export { fetchAvatar, uploadAvatar, deleteAvatar, clearProfileError } from './slices/profileSlice';
