@@ -10,6 +10,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-13
+
 ### Security
 - Django 6.1.1 → 6.1.2: security release (CVE-2026-87890, bytes in spatial
   lookups; CVE-2026-15830, WKB geometry collection limits; CVE-2026-84429 and
@@ -317,7 +319,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   algorithm-confusion flaws were not reachable; `PyJWKClient` redirect handling
   is fixed.
 
-[Unreleased]: https://github.com/team-dvl/hornet-finder/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/team-dvl/hornet-finder/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/team-dvl/hornet-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/team-dvl/hornet-finder/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/team-dvl/hornet-finder/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/team-dvl/hornet-finder/compare/v1.0.0...v1.1.0
