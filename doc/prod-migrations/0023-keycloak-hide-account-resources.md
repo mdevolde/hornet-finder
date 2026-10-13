@@ -1,4 +1,4 @@
-status: pending
+status: applied (2026-10-13)
 
 # Retrait du panneau « Ressources » de la console « Mon compte » (`devel`)
 
