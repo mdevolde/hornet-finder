@@ -22,7 +22,7 @@ Ce qui **ne change pas** : Keycloak, nginx, volumes. Pas d'interruption au-delà
 1. `git merge --ff-only devel`
 2. Générer les clés (une fois, **ne pas réutiliser celles de dev**) :
    ```
-   docker compose run --rm --no-deps hornet-finder-api python manage.py generate_vapid_keys
+   docker compose run --rm --no-deps --entrypoint python hornet-finder-api manage.py generate_vapid_keys
    ```
    Les deux lignes affichées vont dans `.env` du worktree prod. La clé privée ne doit apparaître nulle part ailleurs (ni commit, ni logs, ni chat).
 3. `./deploy.sh -b` (reconstruit l'image de l'API et le frontend ; l'API applique `0026_push_notifications`).
