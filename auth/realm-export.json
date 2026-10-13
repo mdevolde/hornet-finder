@@ -2304,10 +2304,14 @@
         "acceptsPromptNoneForwardFromClient": "false",
         "clientId": "220472679472-m69ebcfsepo5pjrm0dh6baclm52l6kgs.apps.googleusercontent.com",
         "disableUserInfo": "false",
+        "allowAdminRoleMapping": "false",
+        "showInAccountConsole": "ALWAYS",
         "filteredByClaim": "false",
         "syncMode": "LEGACY",
         "clientSecret": "**********",
         "caseSensitiveOriginalUsername": "false",
+        "issuer": "https://accounts.google.com",
+        "jwtAuthorizationGrantMaxAllowedAssertionExpiration": "3600",
         "guiOrder": "0"
       },
       "types": []
@@ -3564,6 +3568,7 @@
   "attributes": {
     "cibaBackchannelTokenDeliveryMode": "poll",
     "cibaAuthRequestedUserHint": "login_hint",
+    "acr.uri.map": "{}",
     "clientOfflineSessionMaxLifespan": "0",
     "oauth2DevicePollingInterval": "5",
     "clientSessionIdleTimeout": "0",
@@ -3587,7 +3592,7 @@
     "darkMode": "false"
   },
   "keycloakVersion": "26.8.0",
-  "userManagedAccessAllowed": true,
+  "userManagedAccessAllowed": false,
   "organizationsEnabled": false,
   "verifiableCredentialsEnabled": false,
   "adminPermissionsEnabled": false,
