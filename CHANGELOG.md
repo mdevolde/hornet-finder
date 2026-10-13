@@ -20,6 +20,7 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   (GHSA-3547-9m27-7rxg); 3.18.3 fixes a regression of 3.18.2.
 
 ### Added
+- Release script: `release.sh` now accepts short argument (`-n`) for dry run.
 - Map: it reopens where you left it (centre and zoom, on this device, for 30 days after
   the last move). Only a drag by hand is remembered, never a locate fix or a jump to an
   object. "Position par défaut" in the layers sheet forgets it and recentres on the

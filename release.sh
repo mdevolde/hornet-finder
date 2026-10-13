@@ -23,7 +23,7 @@ print_help() {
     echo "  major|minor|patch   Bump the last released version (git tag v*)"
     echo "  X.Y.Z               Use this exact version"
     echo "  --push              Push $BRANCH and the tag to origin"
-    echo "  --dry-run           Show what would happen, change nothing"
+    echo "  -n, --dry-run       Show what would happen, change nothing"
     echo "  -h, --help          Display this help"
 }
 
@@ -32,7 +32,7 @@ die() { echo "❌ $*" >&2; exit 1; }
 while [[ $# -gt 0 ]]; do
     case $1 in
         --push) PUSH=1; shift ;;
-        --dry-run) DRY_RUN=1; shift ;;
+        -n|--dry-run) DRY_RUN=1; shift ;;
         -h|--help) print_help; exit 0 ;;
         -*) print_help >&2; die "Unknown option: $1" ;;
         *) [[ -z "$BUMP" ]] || die "Only one version argument"; BUMP="$1"; shift ;;
@@ -108,3 +108,4 @@ if [[ "$PUSH" == 1 ]]; then
 else
     echo "Push with: git push -u origin $BRANCH $TAG"
 fi
+
