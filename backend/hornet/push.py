@@ -64,7 +64,9 @@ def _payload(delivery: PushDelivery, notification: PushNotification) -> str:
         'id': str(delivery.id),
         'title': notification.title,
         'body': notification.body,
-        'url': '/',
+        'url': notification.url or '/',
+        # A reminder repeated for the same trap replaces the previous one on screen
+        'tag': f'{notification.kind}:{notification.trap_id}' if notification.trap_id else str(notification.id),
     }, ensure_ascii=False)
 
 
@@ -120,6 +122,11 @@ def _send_safely(delivery_id) -> None:
     finally:
         if not settings.PUSH_SYNC:
             connection.close()  # each worker thread owns its connection
+
+
+def deliver_now(notification_id) -> None:
+    """Send a notification from the calling thread (scheduler, management commands)."""
+    _deliver(notification_id)
 
 
 def queue(notification: PushNotification, user_guids) -> int:

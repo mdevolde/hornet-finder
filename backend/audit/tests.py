@@ -104,6 +104,7 @@ NOT_AUDITED = {
     ('push', 'unsubscribe', 'delete'): "a device's own subscription, not a business action",
     ('push', 'test', 'post'): "a message to oneself",
     ('push', 'ack', 'post'): "a device's receipt, sent by the service worker",
+    ('push', 'set_preferences', 'put'): "a personal setting, not a business action",
     ('tag', 'sheet', 'post'): "signs a link to print existing tags: a read",
     ('tagadmin', 'sheet', 'post'): "signs a link to print existing tags: a read",
 }

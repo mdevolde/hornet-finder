@@ -42,7 +42,7 @@ services:
     build: ./backend
     container_name: hornet-finder-dev-api
     image: hornet-finder-dev-api
-    environment:
+    environment: &api-environment
       - DEBUG=True
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - HOST=dev.velutina.ovh
@@ -71,6 +71,19 @@ services:
     depends_on:
       - hornet-finder-dev-api-db
       - hornet-finder-dev-keycloak
+
+  # Periodic jobs (trap reminders): the API image, running `manage.py
+  # run_scheduler` instead of gunicorn (the image entrypoint always starts
+  # gunicorn, hence the entrypoint override). Reads the same environment.
+  hornet-finder-dev-scheduler:
+    build: ./backend
+    container_name: hornet-finder-dev-scheduler
+    image: hornet-finder-dev-scheduler
+    entrypoint: ["python", "manage.py", "run_scheduler"]
+    environment: *api-environment
+    depends_on:
+      - hornet-finder-dev-api-db
+      - hornet-finder-dev-api
 
   # Database Keycloak pour DEV
   hornet-finder-dev-keycloak-db:

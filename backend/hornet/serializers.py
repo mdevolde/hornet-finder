@@ -275,7 +275,12 @@ class TrapTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrapType
         fields = ['id', 'slug', 'name', 'description', 'sort_order', 'apiary_bound',
-                  'accumulates', 'photo_url', 'photo_thumbnail_url', 'trap_count']
+                  'accumulates', 'reading_interval_days', 'refill_interval_days',
+                  'photo_url', 'photo_thumbnail_url', 'trap_count']
+        extra_kwargs = {
+            'reading_interval_days': {'min_value': 1, 'max_value': 365},
+            'refill_interval_days': {'min_value': 1, 'max_value': 365},
+        }
         # The slug is internal identity, derived from the name on creation and
         # frozen afterwards: an administrator names a trap type, they do not
         # invent an identifier for it.

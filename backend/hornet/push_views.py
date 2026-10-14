@@ -30,10 +30,11 @@ from hornet_finder_api import utils as keycloak
 from hornet_finder_api.authentication import HasAnyRole, JWTBearerAuthentication
 from hornet_finder_api.roles import APP_ROLES
 
+from . import notification_kinds as kinds
 from . import push
 from . import trap_permissions as perms
 from .group_views import GUID_PATTERN, _administered, _guid, _Roster
-from .models import PushDelivery, PushNotification, PushSubscription
+from .models import PushDelivery, PushNotification, PushSubscription, User
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +160,7 @@ class PushViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_429_TOO_MANY_REQUESTS)
         with transaction.atomic():
             notification = PushNotification.objects.create(
-                sender=user.guid, recipient=user.guid, group_path='', recipients_count=1,
+                sender=user.guid, recipient=user.guid, kind=kinds.TEST, recipients_count=1,
                 title='Velutina', body="Essai de notification : tout fonctionne.")
             devices = self._send(notification, [user.guid])
         if devices == 0:
@@ -172,7 +173,9 @@ class PushViewSet(viewsets.GenericViewSet):
     def send(self, request):
         """
         Notify the members of `group_path` (`title`, `body`), or only `guid` among them. Answers
-        `recipients` (people addressed), `reached` (of those, with a device) and `devices`.
+        `recipients` (people addressed), `reached` (of those, with a device), `muted` (of those,
+        who turned this kind of message off: `platform_message` from a platform admin,
+        `group_message` otherwise) and `devices`.
         Errors carry a `code`: `rate_limited` (429), `no_recipient` (409), `disabled` (503).
         """
         disabled = _require_enabled()
@@ -206,20 +209,55 @@ class PushViewSet(viewsets.GenericViewSet):
                  'detail': f"{PushNotification.HOURLY_LIMIT} notifications par heure au plus : réessayez plus tard."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS)
 
+        # A platform admin writes as the platform, wherever they write
+        kind = kinds.PLATFORM_MESSAGE if perms.is_platform_admin(request.user) else kinds.GROUP_MESSAGE
+        muted = {str(u.guid) for u in User.objects.filter(guid__in=recipients) if not kinds.wants(u, kind)}
+
         with transaction.atomic():
             notification = PushNotification.objects.create(
-                sender=user.guid, group_path=group_path, recipient=guid or None, title=title, body=body,
-                recipients_count=len(recipients))
-            devices = self._send(notification, recipients)
+                sender=user.guid, kind=kind, group_path=group_path, recipient=guid or None, title=title,
+                body=body, recipients_count=len(recipients))
+            devices = self._send(notification, recipients - muted)
             reached = PushDelivery.objects.filter(notification=notification).values('user').distinct().count()
             audit.record(request, 'notification.sent', ('group', group_path),
                          label=keycloak.group_display_name(group),
-                         changes={'title': title, 'recipients': len(recipients), 'devices': devices},
+                         changes={'title': title, 'kind': kind, 'recipients': len(recipients),
+                                  'muted': len(muted), 'devices': devices},
                          refs=[audit.ref('user', guid)] if guid else [])
         logger.info("Notification %s sent to %s people (%s devices) of %s by %s",
                     notification.id, len(recipients), devices, group_path, user.guid)
         return Response({'id': notification.id, 'recipients': len(recipients), 'reached': reached,
-                         'devices': devices}, status=status.HTTP_202_ACCEPTED)
+                         'muted': len(muted), 'devices': devices}, status=status.HTTP_202_ACCEPTED)
+
+    def _preferences(self, user) -> Response:
+        prefs = user.notification_prefs or {}
+        return Response({'kinds': [{'id': kind, 'label': label, 'enabled': prefs.get(kind, True) is not False}
+                                   for kind, label in kinds.KINDS.items()]})
+
+    @extend_schema(responses={200: None})
+    @action(detail=False, methods=['get'])
+    def preferences(self, request):
+        """The kinds of notifications and whether the caller receives each (every device)."""
+        return self._preferences(_requester(request))
+
+    @extend_schema(request=None, responses={200: None})
+    @preferences.mapping.put
+    def set_preferences(self, request):
+        """Turn kinds on or off: `{"trap_reading": false, ...}`; kinds left out keep their setting."""
+        user = _requester(request)
+        if not isinstance(request.data, dict):
+            raise ValidationError({'detail': "Objet attendu."})
+        prefs = dict(user.notification_prefs or {})
+        for kind, enabled in request.data.items():
+            if kind not in kinds.KINDS or not isinstance(enabled, bool):
+                raise ValidationError({kind: "Sorte de notification inconnue, ou valeur non booléenne."})
+            if enabled:
+                prefs.pop(kind, None)  # on is the default: only what is off is stored
+            else:
+                prefs[kind] = False
+        user.notification_prefs = prefs
+        user.save(update_fields=['notification_prefs'])
+        return self._preferences(user)
 
     @extend_schema(request=None, responses={204: None})
     @action(detail=False, methods=['post'], url_path=f'ack/(?P<delivery_id>{GUID_PATTERN})')
@@ -248,6 +286,7 @@ class PushViewSet(viewsets.GenericViewSet):
                 'id': delivery.id,
                 'notification': delivery.notification_id,
                 'title': delivery.notification.title,
+                'kind': delivery.notification.kind,
                 'created_at': delivery.notification.created_at,
                 'device': delivery.device,
                 'installed': delivery.installed,

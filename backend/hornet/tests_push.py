@@ -127,7 +127,8 @@ class SendTests(PushTestCase):
         self._send(self.aga)
         payload = __import__('json').loads(self.sent.call_args.kwargs['data'])
         delivery = PushDelivery.objects.get()
-        self.assertEqual(payload, {'id': str(delivery.id), 'title': 'Réunion', 'body': 'Ce soir à 20 h.', 'url': '/'})
+        self.assertEqual(payload, {'id': str(delivery.id), 'title': 'Réunion', 'body': 'Ce soir à 20 h.', 'url': '/',
+                                   'tag': str(delivery.notification_id)})
         self.assertEqual(self.sent.call_args.kwargs['vapid_claims'], {'sub': 'mailto:contact@velutina.ovh'})
 
     def test_a_single_member(self):
@@ -186,8 +187,25 @@ class SendTests(PushTestCase):
         _subscription(self.member)
         self._send(self.aga)
         [event] = AuditEvent.objects.filter(action='notification.sent')
-        self.assertEqual(event.changes, {'title': 'Réunion', 'recipients': 2, 'devices': 1})
+        self.assertEqual(event.changes, {'title': 'Réunion', 'kind': 'group_message', 'recipients': 2,
+                                         'muted': 0, 'devices': 1})
         self.assertEqual((event.target_type, event.target_id), ('group', _ENA))
+
+
+class MutedKindsTests(PushTestCase):
+    def test_a_member_who_turned_group_messages_off_is_not_sent_them(self):
+        _subscription(self.member), _subscription(self.bee)
+        User.objects.filter(guid=self.bee.guid).update(notification_prefs={'group_message': False})
+        response = self._send(self.aga)
+        self.assertEqual((response.data['recipients'], response.data['muted'], response.data['devices']), (2, 1, 1))
+        self.assertEqual(PushNotification.objects.get().kind, 'group_message')
+
+    def test_a_platform_admin_writes_as_the_platform(self):
+        _subscription(self.member)
+        User.objects.filter(guid=self.member.guid).update(notification_prefs={'group_message': False})
+        response = self._send(self.admin)
+        self.assertEqual((response.data['muted'], response.data['devices']), (0, 1))
+        self.assertEqual(PushNotification.objects.get().kind, 'platform_message')
 
 
 class DeliveryTests(PushTestCase):

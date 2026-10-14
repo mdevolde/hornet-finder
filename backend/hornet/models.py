@@ -44,6 +44,9 @@ class User(models.Model):
     # Profile photo uploaded in the app. Its public URL is also written to the
     # Keycloak `picture` attribute, so the account console and the tokens show it.
     avatar = models.ImageField(upload_to=avatar_upload_path, null=True, blank=True)
+    # Notification kinds the user turned off, `{kind: false}`; a kind absent is
+    # on (see hornet/notification_kinds.py)
+    notification_prefs = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return str(self.guid)
@@ -239,6 +242,10 @@ class TrapType(models.Model):
     # trap...): a reading counts what the trap holds and says whether it was
     # emptied. Otherwise (butterfly net...) every reading takes everything out.
     accumulates = models.BooleanField(default=False)
+    # Reminders to the owners (see hornet/reminders.py): a reading every so many
+    # days, a renewal of the attractant every so many days; null for none
+    reading_interval_days = models.PositiveSmallIntegerField(null=True, blank=True)
+    refill_interval_days = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['sort_order', 'name']
@@ -786,9 +793,10 @@ class PushSubscription(models.Model):
 
 class PushNotification(models.Model):
     """
-    One message an administrator sent, to a group or to one of its members. The
-    text is kept so the diagnostics can show what went out, and the rows of the
-    last hour limit how many messages a sender may send.
+    One message sent: by an administrator to a group or to one of its members,
+    by someone to their own devices (test), or by the system (trap reminders,
+    `sender` null). The text is kept so the diagnostics can show what went out,
+    and the rows of the last hour limit how many messages a sender may send.
     """
 
     HOURLY_LIMIT = 10
@@ -796,11 +804,19 @@ class PushNotification(models.Model):
     BODY_MAX = 200
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    sender = models.UUIDField(db_index=True)  # Keycloak GUID, not a foreign key: outlives the account
-    group_path = models.CharField(max_length=255)
-    recipient = models.UUIDField(null=True, blank=True)  # set for a message to one member
+    # Keycloak GUID, not a foreign key: outlives the account; null for the system
+    sender = models.UUIDField(null=True, blank=True, db_index=True)
+    # One of hornet.notification_kinds (or `test`)
+    kind = models.CharField(max_length=32, default='group_message')
+    group_path = models.CharField(max_length=255, blank=True, default='')
+    recipient = models.UUIDField(null=True, blank=True)  # set for a message to one person
+    # The trap a reminder is about (null for a summary or a message)
+    trap = models.ForeignKey('Trap', null=True, blank=True, on_delete=models.SET_NULL,
+                             related_name='notifications')
     title = models.CharField(max_length=TITLE_MAX)
     body = models.CharField(max_length=BODY_MAX)
+    # Where a tap on the notification leads, in the app
+    url = models.CharField(max_length=255, blank=True, default='')
     recipients_count = models.PositiveIntegerField(default=0)  # people reached by the roster
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
 
@@ -830,3 +846,21 @@ class PushDelivery(models.Model):
     error = models.CharField(max_length=200, blank=True, default='')
     sent_at = models.DateTimeField(null=True, blank=True)
     received_at = models.DateTimeField(null=True, blank=True)
+
+
+class TrapReminder(models.Model):
+    """
+    Where the reminders of one trap stand, for one kind (reading, attractant):
+    the date the delay counts from, and how many reminders went out since. A
+    new reading, refill or installation moves the date and starts afresh. See
+    hornet/reminders.py.
+    """
+
+    trap = models.ForeignKey(Trap, on_delete=models.CASCADE, related_name='reminders')
+    kind = models.CharField(max_length=32)
+    reference_on = models.DateField()
+    sent_count = models.PositiveSmallIntegerField(default=0)
+    last_sent_on = models.DateField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['trap', 'kind'], name='trapreminder_trap_kind')]
