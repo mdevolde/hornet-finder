@@ -148,7 +148,7 @@ export default function UserInfoModal({ show, onHide }: UserInfoModalProps) {
         </FieldRow>
       )}
 
-      <PushSettings />
+      <PushSettings onNavigate={onHide} />
 
       {/* Technical details, for development only */}
       {import.meta.env.DEV && (

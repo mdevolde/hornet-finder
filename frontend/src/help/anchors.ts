@@ -6,7 +6,7 @@
  */
 export const DOC_SECTIONS = {
   nests: ['who', 'report', 'access'],
-  traps: ['manager', 'placing', 'qr-code', 'journal', 'delegation', 'permissions'],
+  traps: ['manager', 'reminders', 'placing', 'qr-code', 'journal', 'delegation', 'permissions'],
   apiaries: ['manager', 'adding', 'sharing', 'permissions'],
   stats: ['catches', 'species', 'trap-types', 'ranking', 'view', 'coverage', 'periods', 'scope', 'export'],
   admin: ['qr-codes', 'groups', 'referentials', 'archiving', 'audit'],

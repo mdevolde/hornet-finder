@@ -24,6 +24,7 @@ import { openHelp } from '../../help/helpStore';
 import { ACTION_ICONS } from '../../utils/icons';
 import ReachabilityBanner from './ReachabilityBanner';
 import InstallSheet from './InstallSheet';
+import PushPromptSheet from './PushPromptSheet';
 
 const SITE_NAME = `Velutina${import.meta.env.DEV ? ' DEV' : ''}`;
 
@@ -143,7 +144,7 @@ export default function NavbarComponent() {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             {modules.map((module) => (
-              <Nav.Link key={module.id} as={NavLink} to={module.path!} onClick={close} className="navbar-module-link">
+              <Nav.Link key={module.id} as={NavLink} to={module.landing ?? module.path!} onClick={close} className="navbar-module-link">
                 <i className={`bi ${module.icon} me-2 d-lg-none module-icon`} data-tone={module.tone} aria-hidden="true" />
                 {module.shortTitle}
               </Nav.Link>
@@ -235,6 +236,7 @@ export default function NavbarComponent() {
 
       <ReachabilityBanner />
       <InstallSheet signedIn={auth.isAuthenticated} />
+      <PushPromptSheet signedIn={auth.isAuthenticated} />
     </Navbar>
   );
 }

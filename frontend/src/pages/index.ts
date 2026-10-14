@@ -7,3 +7,4 @@ export { AdminIndex, TrapTypesAdmin, SpeciesAdmin, TagsAdmin, ArchivingAdmin, Gr
 export { default as PrivacyPolicy } from './PrivacyPolicy';
 export { default as DataDeletion } from './DataDeletion';
 export { default as Invitations } from './Invitations';
+export { default as Notifications } from './Notifications';

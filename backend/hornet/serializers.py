@@ -600,6 +600,7 @@ class TrapSerializer(GPSValidationMixin, serializers.ModelSerializer):
                 'name': instance.trap_type.name,
                 'apiary_bound': instance.trap_type.apiary_bound,
                 'accumulates': instance.trap_type.accumulates,
+                'reading_interval_days': instance.trap_type.reading_interval_days,
                 'photo_thumbnail_url': (
                     instance.trap_type.photo_thumbnail.url
                     if instance.trap_type.photo_thumbnail else None

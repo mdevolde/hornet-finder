@@ -1579,3 +1579,101 @@ mark.help-hit-current {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- Settings rows ending with a switch (components/ui/Switch.tsx) ------------ */
+.app-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.app-switch-row:last-child {
+  border-bottom: 0;
+}
+.app-switch-icon {
+  width: 2rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 1.25rem;
+}
+.app-switch-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.app-switch.form-check {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+.app-switch .form-check-input {
+  float: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* iOS switch: 51 x 31 px, green when on, white knob with a soft shadow */
+html[data-platform="ios"] .app-switch .form-check-input {
+  width: 51px;
+  height: 31px;
+  border: 0;
+  border-radius: 16px;
+  background-color: #e9e9ea;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 31 31'%3E%3Cdefs%3E%3Cfilter id='s' x='-30%25' y='-30%25' width='160%25' height='160%25'%3E%3CfeDropShadow dx='0' dy='1.5' stdDeviation='1.2' flood-opacity='.25'/%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='15.5' cy='15.5' r='13.5' fill='%23fff' filter='url(%23s)'/%3E%3C/svg%3E");
+  background-size: 31px 31px;
+  background-position: left center;
+  transition: background-position 0.2s ease, background-color 0.2s ease;
+}
+html[data-platform="ios"] .app-switch .form-check-input:checked {
+  background-color: #34c759;
+  background-position: right center;
+}
+
+/* Material 3 switch: 52 x 32 px, outlined track and small thumb when off,
+   the app colour and a large thumb carrying a tick when on */
+html[data-platform="material"] .app-switch .form-check-input {
+  width: 52px;
+  height: 32px;
+  border: 2px solid #79747e;
+  border-radius: 16px;
+  background-color: #e7e0ec;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='8' fill='%2379747e'/%3E%3C/svg%3E");
+  background-size: 28px 28px;
+  background-position: left center;
+  transition: background-position 0.2s ease, background-color 0.2s ease;
+}
+html[data-platform="material"] .app-switch .form-check-input:checked {
+  border-color: var(--bs-primary);
+  background-color: var(--bs-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='12' fill='%23fff'/%3E%3Cpath d='M9.2 14.3l3.1 3.1 6.5-6.7' fill='none' stroke='%230d6efd' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right center;
+}
+
+/* Count of what waits on a landing tile (reminders due) */
+.module-card-count {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  min-width: 1.5rem;
+}
+
+/* A reminder of the "À relever" list */
+.due-item .due-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: var(--bs-tertiary-bg);
+  font-size: 1.2rem;
+}
+
+/* A number of days, followed by its unit */
+.days-input {
+  max-width: 7rem;
+}

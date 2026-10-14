@@ -1,4 +1,4 @@
-import { isInstalledPwa } from './pwa';
+import { isInstalledPwa, isIosDevice } from './pwa';
 import { BADGE_CACHE } from './pushBadge';
 
 /**
@@ -12,14 +12,8 @@ import { BADGE_CACHE } from './pushBadge';
 
 export type PushSupport = 'ok' | 'install-ios' | 'unsupported';
 
-function isIos(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent)
-    // iPadOS announces itself as a Mac
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
 export function pushSupport(): PushSupport {
-  if (isIos() && !isInstalledPwa()) return 'install-ios';
+  if (isIosDevice() && !isInstalledPwa()) return 'install-ios';
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window ? 'ok' : 'unsupported';
 }
 

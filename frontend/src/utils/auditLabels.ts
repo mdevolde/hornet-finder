@@ -205,6 +205,8 @@ export const FIELD_LABELS: Record<string, string> = {
   sort_order: 'Ordre',
   apiary_bound: 'Lié à un rucher',
   accumulates: 'Accumule les captures',
+  reading_interval_days: 'Relevé tous les (jours)',
+  refill_interval_days: "Attractif tous les (jours)",
   scientific_name: 'Nom scientifique',
   wikipedia_url: 'Wikipédia',
   photo_credit: 'Crédit photo',

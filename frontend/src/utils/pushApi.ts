@@ -22,13 +22,25 @@ export interface SentSummary {
   recipients: number;
   /** Of those, how many have a device */
   reached: number;
+  /** Of those, how many turned this kind of message off */
+  muted: number;
   devices: number;
+}
+
+/** A kind of notification the user can turn off, for all their devices */
+export type NotificationKind = 'trap_reading' | 'trap_refill' | 'group_message' | 'platform_message';
+
+export interface NotificationPreference {
+  id: NotificationKind;
+  label: string;
+  enabled: boolean;
 }
 
 export interface PushDeliveryRow {
   id: string;
   notification: string;
   title: string;
+  kind: NotificationKind | 'test';
   created_at: string;
   device: string;
   installed: boolean;
@@ -69,6 +81,14 @@ export async function sendTest(): Promise<{ devices: number }> {
 
 export async function sendNotification(draft: NotificationDraft): Promise<SentSummary> {
   return (await api.post('/push/send/', draft)).data;
+}
+
+export async function fetchPreferences(): Promise<NotificationPreference[]> {
+  return (await api.get('/push/preferences/')).data.kinds;
+}
+
+export async function savePreference(kind: NotificationKind, enabled: boolean): Promise<NotificationPreference[]> {
+  return (await api.put('/push/preferences/', { [kind]: enabled })).data.kinds;
 }
 
 export async function fetchDeliveries(): Promise<PushDeliveryRow[]> {

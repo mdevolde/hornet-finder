@@ -51,6 +51,8 @@ interface PushPayload {
   title?: string
   body?: string
   url?: string
+  /** Same tag: the notification replaces the previous one (a reminder repeated for the same trap) */
+  tag?: string
 }
 
 function readPayload(event: PushEvent): PushPayload {
@@ -83,11 +85,17 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     // A push must always end in a visible notification: iOS and Chrome revoke
     // the permission of a site that receives pushes without showing any
-    await self.registration.showNotification(payload.title || 'Velutina', {
+    const options: NotificationOptions & { renotify?: boolean } = {
       body: payload.body,
       icon: import.meta.env.VITE_APP_ICON,
       data: { url: payload.url || '/' },
-    })
+    }
+    if (payload.tag) {
+      options.tag = payload.tag
+      // A replaced notification still alerts: it is a new reminder
+      options.renotify = true
+    }
+    await self.registration.showNotification(payload.title || 'Velutina', options)
     await addToBadge()
     // Tells the server the device showed it, to measure the delay. Best effort:
     // the notification does not depend on it, and the id is the only credential
@@ -106,7 +114,11 @@ self.addEventListener('notificationclick', (event) => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const open = windows.find((client) => new URL(client.url).origin === self.location.origin)
     if (open) {
-      await open.focus()
+      // The app is open: bring it to the front and let its router go to the page
+      // (`useNotificationClicks`), without reloading it
+      const focused = await open.focus()
+      const url = new URL(target)
+      focused.postMessage({ type: 'navigate', url: url.pathname + url.search })
       return
     }
     await self.clients.openWindow(target)

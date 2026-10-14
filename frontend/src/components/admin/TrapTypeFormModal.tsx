@@ -22,6 +22,8 @@ export default function TrapTypeFormModal({ onHide, trapType = null }: TrapTypeF
   const [sortOrder, setSortOrder] = useState(trapType?.sort_order ?? 0);
   const [apiaryBound, setApiaryBound] = useState(trapType?.apiary_bound ?? false);
   const [accumulates, setAccumulates] = useState(trapType?.accumulates ?? false);
+  const [readingDays, setReadingDays] = useState(trapType?.reading_interval_days?.toString() ?? '');
+  const [refillDays, setRefillDays] = useState(trapType?.refill_interval_days?.toString() ?? '');
   const [photo, setPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +33,10 @@ export default function TrapTypeFormModal({ onHide, trapType = null }: TrapTypeF
     setSaving(true);
     setError(null);
     try {
+      const days = (text: string) => (text.trim() === '' ? null : Number(text));
       const values = {
-        name, description, sort_order: sortOrder, apiary_bound: apiaryBound, accumulates, photo,
+        name, description, sort_order: sortOrder, apiary_bound: apiaryBound, accumulates,
+        reading_interval_days: days(readingDays), refill_interval_days: days(refillDays), photo,
       };
       if (trapType) {
         await dispatch(updateTrapType({ id: trapType.id, values })).unwrap();
@@ -125,6 +129,35 @@ export default function TrapTypeFormModal({ onHide, trapType = null }: TrapTypeF
           nouvelles prises. Sinon (filet...), chaque relevé retire tout ce qui a été pris.
         </HelpTip>
       </Form.Group>
+
+      <h3 className="h6 text-uppercase text-muted mt-4 mb-2">Rappels aux propriétaires</h3>
+      {([
+        ['reading', 'Relevé tous les', readingDays, setReadingDays,
+          "Le propriétaire d'un piège de ce type reçoit un rappel quand son dernier relevé (ou, à défaut, "
+          + "l'installation) date de ce nombre de jours. Vide : pas de rappel."],
+        ['refill', "Renouvellement de l'attractif tous les", refillDays, setRefillDays,
+          "Rappel quand la dernière recharge (ou l'installation) date de ce nombre de jours. Vide : pas de rappel, "
+          + "pour les pièges sans attractif."],
+      ] as const).map(([key, label, value, setValue, help]) => (
+        <Form.Group className="mb-3" controlId={`trap-type-${key}-days`} key={key}>
+          <Form.Label className="d-flex align-items-center">
+            {label}
+            <HelpTip id={`${key}-days-help`} doc="traps#reminders" title={label}>{help}</HelpTip>
+          </Form.Label>
+          <div className="d-flex align-items-center gap-2">
+            <Form.Control
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={365}
+              className="text-center days-input"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+            />
+            <span className="text-muted">jours</span>
+          </div>
+        </Form.Group>
+      ))}
 
       <PhotoInput
         label={trapType?.photo_url ? 'Remplacer la photo' : 'Photo'}

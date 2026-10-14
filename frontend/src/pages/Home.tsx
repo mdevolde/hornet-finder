@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
@@ -6,6 +7,8 @@ import { ModuleCard, PendingInvitations } from '../components/home';
 import { visibleModules } from '../config/modules';
 import { accountConsoleUrl, signInFromCurrentPage } from '../utils/authRedirect';
 import { useUserPermissions } from '../hooks/useUserPermissions';
+import { fetchDue } from '../utils/dueApi';
+import { BEEKEEPER, TRAPPER } from '../utils/roles';
 
 /** App icon, the dev one (purple, "DEV" band) on the dev server, as for the installed PWA. */
 const APP_ICON = import.meta.env.VITE_APP_ICON;
@@ -15,6 +18,18 @@ export default function Home() {
   const auth = useAuth();
   const { roles } = useUserPermissions();
   const modules = visibleModules(roles);
+  const ownsTraps = auth.isAuthenticated && roles.some((role) => role === TRAPPER || role === BEEKEEPER);
+
+  // Reminders due on the user's traps, counted on the traps tile
+  const [dueCount, setDueCount] = useState(0);
+  useEffect(() => {
+    if (!ownsTraps) return;
+    let cancelled = false;
+    fetchDue(0)
+      .then((items) => { if (!cancelled) setDueCount(items.length); })
+      .catch(() => { /* the count is a hint: nothing shown without it */ });
+    return () => { cancelled = true; };
+  }, [ownsTraps]);
 
   return (
     <PageLayout>
@@ -60,8 +75,9 @@ export default function Home() {
                 description={module.description}
                 icon={module.icon}
                 tone={module.tone}
-                to={module.path}
+                to={module.landing ?? module.path}
                 badge={module.badge}
+                count={module.id === 'traps' && ownsTraps ? dueCount : undefined}
               />
             )
           ))}
