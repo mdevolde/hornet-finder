@@ -289,3 +289,7 @@ VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
 VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', 'mailto:contact@velutina.ovh')
 # Send inline instead of in a background thread (tests)
 PUSH_SYNC = False
+# Retention (scheduler): the history of sent notifications and their deliveries,
+# and the devices on which the app was not opened for that long (about six months)
+PUSH_HISTORY_DAYS = int(os.environ.get('PUSH_HISTORY_DAYS') or 90)
+PUSH_DEVICE_IDLE_DAYS = int(os.environ.get('PUSH_DEVICE_IDLE_DAYS') or 183)

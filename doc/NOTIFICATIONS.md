@@ -10,6 +10,7 @@ Un administrateur écrit à un membre ou à tout un groupe ; le message s'affich
 - **Livraison** : l'API crée un `PushDelivery` par appareil et envoie en arrière-plan (8 envois en parallèle). Le service de notification répond 201 (pris en charge), 404/410 (appareil désabonné : l'abonnement est supprimé) ou une erreur.
 - **Accusé de réception** : le service worker (`frontend/src/sw.ts`) affiche la notification puis appelle `POST /api/push/ack/<id>/` (sans session ; l'identifiant, non devinable, est le seul justificatif). Le délai entre l'envoi et l'accusé est affiché dans *Administration → Notifications* (administrateurs de la plateforme).
 - **Journal d'audit** : `notification.sent` garde le titre et les effectifs, jamais le texte.
+- **Conservation** (`push.purge_expired`, à chaque passage du service planifié) : l'historique des envois (`PushNotification`, avec leurs `PushDelivery`) est supprimé après 90 jours (`PUSH_HISTORY_DAYS`). Un appareil sur lequel l'application n'a pas été ouverte depuis 183 jours (`PUSH_DEVICE_IDLE_DAYS`, environ 6 mois) est oublié : chaque ouverture réenregistre l'abonnement et met à jour `last_seen_at`. Un appareil oublié dont le navigateur garde l'autorisation se réabonne de lui-même à la prochaine ouverture ; entre-temps, il ne reçoit rien. `manage.py purge_push_history --dry-run` compte ce qui partirait.
 
 ## Pastille sur l'icône
 
@@ -53,7 +54,7 @@ Les propriétaires de pièges reçoivent un rappel quand un relevé ou le renouv
 
 ### Le service planifié
 
-Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hornet-finder-scheduler`) est l'image de l'API lancée avec `manage.py run_scheduler` au lieu de gunicorn (surcharge de l'`entrypoint`). Toutes les 10 minutes, il fait un passage : envoyer ce qui est dû aujourd'hui et pas encore parti. Le passage est idempotent et prend un verrou PostgreSQL (`pg_try_advisory_xact_lock`), deux passages simultanés n'envoient donc rien en double. Tant que l'API n'a pas appliqué ses migrations, il réessaie au passage suivant.
+Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hornet-finder-scheduler`) est l'image de l'API lancée avec `manage.py run_scheduler` au lieu de gunicorn (surcharge de l'`entrypoint`). Toutes les 10 minutes, il fait un passage : envoyer ce qui est dû aujourd'hui et pas encore parti, puis purger l'historique et les appareils inutilisés (voir *Conservation*). Chaque tâche est indépendante : l'échec de l'une n'empêche pas l'autre. Le passage est idempotent et prend un verrou PostgreSQL (`pg_try_advisory_xact_lock`), deux passages simultanés n'envoient donc rien en double. Tant que l'API n'a pas appliqué ses migrations, il réessaie au passage suivant.
 
 - `./deploy.sh -s scheduler` le redémarre seul ; `./logs.sh scheduler` montre ses passages.
 - `docker compose exec <service api> python manage.py send_trap_reminders --dry-run` affiche ce qui partirait maintenant, sans rien envoyer (`--now 2026-10-20T09:05` pour simuler une heure).

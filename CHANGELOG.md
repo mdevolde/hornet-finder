@@ -23,6 +23,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   switches that look like the platform's (iOS or Material). A first question about
   notifications appears once per device, from the second visit.
 - Trap menu: "Remiser" and "Remettre en service".
+- Notifications retention: the history of sent notifications is deleted after 90 days, and
+  a device on which the app was not opened for 6 months stops receiving them (it registers
+  again when the app is opened). The privacy policy says so.
 
 ### Changed
 - Traps module: the former list is the "Gérer" tab; a trap is highlighted as late after

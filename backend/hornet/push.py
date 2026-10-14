@@ -9,7 +9,13 @@ each browser with the keys it gave when subscribing (RFC 8291).
 
 Sending is done off the request: a push service answers in 0.1 to 1 s, and a
 group may hold a few hundred devices.
+
+Retention (`purge_expired`, run by the scheduler): the history of sent
+notifications for `PUSH_HISTORY_DAYS`, a device for `PUSH_DEVICE_IDLE_DAYS`
+after the app was last opened on it.
 """
+
+import datetime
 
 import json
 import logging
@@ -153,3 +159,28 @@ def dispatch(notification: PushNotification) -> None:
             connection.close()
 
     threading.Thread(target=run, daemon=True).start()
+
+
+def purge_expired(now=None, dry_run=False) -> dict:
+    """
+    Delete the notifications older than `PUSH_HISTORY_DAYS` (their deliveries go
+    with them) and the devices on which the app was not opened for
+    `PUSH_DEVICE_IDLE_DAYS`. Such a device registers again, silently, the next
+    time the app is opened on it (usePushRebind), as long as the browser keeps
+    its permission. Idempotent; returns the counts.
+    """
+    now = now or timezone.now()
+    notifications = PushNotification.objects.filter(
+        created_at__lt=now - datetime.timedelta(days=settings.PUSH_HISTORY_DAYS))
+    devices = PushSubscription.objects.filter(
+        last_seen_at__lt=now - datetime.timedelta(days=settings.PUSH_DEVICE_IDLE_DAYS))
+    result = {
+        'notifications': notifications.count(),
+        'deliveries': PushDelivery.objects.filter(notification__in=notifications).count(),
+        'devices': devices.count(),
+    }
+    if not dry_run and (result['notifications'] or result['devices']):
+        notifications.delete()
+        devices.delete()
+        logger.info("Push retention: %s", result)
+    return result

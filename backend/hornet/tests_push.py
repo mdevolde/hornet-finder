@@ -1,8 +1,10 @@
 """Web Push: subscriptions, sending to a group or a member, acknowledgements."""
 
+import datetime
 from unittest.mock import MagicMock, patch
 
 from django.test import override_settings
+from django.utils import timezone
 
 from audit.models import AuditEvent
 from pywebpush import WebPushException
@@ -271,3 +273,45 @@ class SelfTestTests(PushTestCase):
 
     def test_without_device_there_is_nothing_to_test(self):
         self.assertEqual(self._post('test', self.member).status_code, 409)
+
+
+class RetentionTests(PushTestCase):
+    def _notification(self, days_ago):
+        notification = PushNotification.objects.create(sender=None, recipient=self.member.guid, title='t',
+                                                        body='b', recipients_count=1)
+        PushNotification.objects.filter(pk=notification.pk).update(
+            created_at=timezone.now() - datetime.timedelta(days=days_ago))
+        return notification
+
+    def _seen(self, n, days_ago):
+        sub = _subscription(self.member, n)
+        PushSubscription.objects.filter(pk=sub.pk).update(
+            last_seen_at=timezone.now() - datetime.timedelta(days=days_ago))
+        return sub
+
+    def test_old_history_and_idle_devices_are_purged(self):
+        recent_device, idle_device = self._seen(1, 182), self._seen(2, 184)
+        old, recent = self._notification(91), self._notification(89)
+        for notification in (old, recent):
+            PushDelivery.objects.create(notification=notification, subscription=recent_device, user=self.member.guid)
+        self.assertEqual(push.purge_expired(dry_run=True), {'notifications': 1, 'deliveries': 1, 'devices': 1})
+        self.assertEqual(PushNotification.objects.count(), 2)  # a dry run deletes nothing
+
+        self.assertEqual(push.purge_expired(), {'notifications': 1, 'deliveries': 1, 'devices': 1})
+        self.assertEqual(list(PushNotification.objects.values_list('pk', flat=True)), [recent.pk])
+        self.assertEqual(PushDelivery.objects.get().notification_id, recent.pk)
+        self.assertEqual(list(PushSubscription.objects.values_list('pk', flat=True)), [recent_device.pk])
+        self.assertFalse(PushSubscription.objects.filter(pk=idle_device.pk).exists())
+        self.assertEqual(push.purge_expired(), {'notifications': 0, 'deliveries': 0, 'devices': 0})
+
+    def test_opening_the_app_keeps_the_device(self):
+        sub = self._seen(1, 184)
+        request = self.factory.post('/api/push/subscriptions/', {
+            'endpoint': sub.endpoint, 'keys': {'p256dh': 'k', 'auth': 'a'}}, format='json')
+        from rest_framework.test import force_authenticate
+        force_authenticate(request, user=self.member)
+        response = PushViewSet.as_view({'post': 'subscribe'})(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('last_seen_at', response.data)
+        self.assertEqual(push.purge_expired()['devices'], 0)
+        self.assertTrue(PushSubscription.objects.filter(pk=sub.pk).exists())

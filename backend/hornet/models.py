@@ -786,6 +786,9 @@ class PushSubscription(models.Model):
     device = models.CharField(max_length=64, blank=True, default='')
     installed = models.BooleanField(default=False)  # subscribed from the installed PWA
     created_at = models.DateTimeField(auto_now_add=True)
+    # Last time the app was opened on this device (it registers again at each launch):
+    # a device left unused for PUSH_DEVICE_IDLE_DAYS is forgotten (push.purge_expired)
+    last_seen_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f'{self.user_id} · {self.device}'

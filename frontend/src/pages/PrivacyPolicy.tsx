@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '../utils/format';
 
 /** Date of the last revision of this policy */
-const LAST_UPDATED = '2026-10-09T12:00:00';
+const LAST_UPDATED = '2026-10-14T12:00:00';
 
 export default function PrivacyPolicy() {
   return (
@@ -56,6 +56,7 @@ export default function PrivacyPolicy() {
               <li>Données de géolocalisation des signalements</li>
               <li>Informations techniques relatives aux signalements (photos, descriptions, dates)</li>
               <li>Journal des actions faites dans l'application (voir l'article 8)</li>
+              <li>Si vous les activez, l'abonnement de vos appareils aux notifications et les notifications envoyées (voir l'article 7)</li>
             </ul>
           </section>
 
@@ -112,6 +113,15 @@ export default function PrivacyPolicy() {
               statistiques et de recherche scientifique, après anonymisation.
             </p>
             <p>Le journal des actions est conservé un an (article 8).</p>
+            <p>
+              Si vous activez les notifications sur un appareil, nous gardons l'adresse d'envoi que
+              votre navigateur a obtenue de son service de notification (Apple, Google ou Mozilla),
+              les clés qui chiffrent les messages pour cet appareil et son type (par exemple
+              « iOS · Safari »). Cet abonnement est supprimé quand vous désactivez les
+              notifications, quand vous vous déconnectez, ou après six mois sans ouverture de
+              l'application sur cet appareil. Les notifications envoyées (titre, texte, appareils
+              atteints et heure de réception) sont conservées 90 jours.
+            </p>
           </section>
 
           <section className="mb-5">

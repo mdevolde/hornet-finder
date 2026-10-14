@@ -68,7 +68,8 @@ def _text(request, field: str, limit: int) -> str:
 
 def _subscription_row(subscription) -> dict:
     return {'id': subscription.id, 'device': subscription.device, 'installed': subscription.installed,
-            'created_at': subscription.created_at, 'endpoint': subscription.endpoint}
+            'created_at': subscription.created_at, 'last_seen_at': subscription.last_seen_at,
+            'endpoint': subscription.endpoint}
 
 
 class PushViewSet(viewsets.GenericViewSet):
@@ -119,7 +120,8 @@ class PushViewSet(viewsets.GenericViewSet):
         subscription, created = PushSubscription.objects.update_or_create(
             endpoint=endpoint,
             defaults={'user': user, 'p256dh': p256dh[:255], 'auth': auth[:255], 'device': device,
-                      'installed': bool(request.data.get('installed'))},
+                      'installed': bool(request.data.get('installed')),
+                      'last_seen_at': timezone.now()},
         )
         return Response(_subscription_row(subscription),
                         status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

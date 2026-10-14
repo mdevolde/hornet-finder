@@ -13,6 +13,8 @@ export interface PushDevice {
   device: string;
   installed: boolean;
   created_at: string;
+  /** Last time the app was opened on this device; unused for 6 months, it is forgotten */
+  last_seen_at: string;
   endpoint: string;
 }
 

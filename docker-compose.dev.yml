@@ -60,6 +60,8 @@ services:
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:contact@velutina.ovh}
+      - PUSH_HISTORY_DAYS=${PUSH_HISTORY_DAYS:-90}
+      - PUSH_DEVICE_IDLE_DAYS=${PUSH_DEVICE_IDLE_DAYS:-183}
       - KC_INTERNAL_URL=http://hornet-finder-dev-keycloak:8080/
       - KC_REALM=hornet-finder-dev
       - EMAIL_HOST=hornet-finder-dev-mailpit

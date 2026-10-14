@@ -107,7 +107,7 @@ The emails use the layout of the Keycloak email theme (`auth/themes/velutina/ema
 
 ### Trap reminders
 
-Owners are reminded of a reading, or a renewal of the attractant, by the delays of the trap type (`reading_interval_days`, `refill_interval_days` on `/api/trap-types/`); see `hornet/reminders.py` and `doc/NOTIFICATIONS.md`. The `scheduler` service (`manage.py run_scheduler`) sends them; `manage.py send_trap_reminders [--dry-run] [--now ISO]` runs one pass by hand.
+Owners are reminded of a reading, or a renewal of the attractant, by the delays of the trap type (`reading_interval_days`, `refill_interval_days` on `/api/trap-types/`); see `hornet/reminders.py` and `doc/NOTIFICATIONS.md`. The `scheduler` service (`manage.py run_scheduler`) sends them; `manage.py send_trap_reminders [--dry-run] [--now ISO]` runs one pass by hand. The scheduler also purges the notification history and the unused devices (`PUSH_HISTORY_DAYS`, `PUSH_DEVICE_IDLE_DAYS`).
 
 - `GET /api/traps/due/?days=1` - What the caller's own traps wait for, one row per trap and kind: `kind` (`trap_reading`, `trap_refill`), `trap`, `interval_days`, `last_on` (last reading or refill, else the installation, `from_installation`), `due_on`, `days_late` (negative: due within `days` days, 0 to 7). Most overdue first
 
@@ -176,6 +176,7 @@ The application requires several environment variables to be configured. These a
 - `TAG_HMAC_KEYS`, `TAG_HMAC_ACTIVE_INDEX`, `TAG_SITE_ID` - Signing keys of the QR tags, the key new tags are signed with, and the site identifier (see `.env.example` for rotation)
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_SSL` / `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` - Outgoing email. Dev: Mailpit, no TLS nor authentication. Prod: OVH MX Plan, `ssl0.ovh.net:465` with implicit TLS and a full mailbox address as user (only the user and password come from `.env`); without `EMAIL_HOST` nothing is sent and the statistics email link is not offered
 - `AUDIT_RETENTION_DAYS` - Days the audit trail keeps an event (default 365); older events are purged at most once a day, or by `manage.py audit_purge`
+- `PUSH_HISTORY_DAYS`, `PUSH_DEVICE_IDLE_DAYS` - Days the history of sent notifications is kept (default 90), and days after which a device on which the app was not opened is forgotten (default 183); purged by the scheduler at each pass, or by `manage.py purge_push_history [--dry-run]`
 
 Refer to the main project's [docker-compose.yml](../docker-compose.yml) file for the complete list of required environment variables.
 
