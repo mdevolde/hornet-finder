@@ -39,6 +39,11 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Map on a touch screen: the position, layers and add buttons sit at the bottom
   right, within reach of the thumb ("+" lowest), above the trap move bar when it
   shows; with a mouse they stay at the top right.
+- Trap type form: the reminder delays are picked from a native list ("Tous
+  les 7 jours", "Aucun rappel"; the wheel on iOS) instead of a number field,
+  with shorter labels; the two switches are settings rows (label, help, switch).
+- Switches: every switch of the app takes the platform's look (iOS or Material),
+  centred on its label, a finger's height.
 
 ## [1.4.0] - 2026-10-13
 
