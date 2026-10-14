@@ -6,13 +6,17 @@ import { BottomSheet } from "../ui";
 import { AddressSearch } from "../traps";
 import type { AddressSuggestion } from "../../utils/geocoding";
 
+/** Where the crosshair was placed from */
+export type CrosshairSource = 'gps' | 'address' | 'center';
+
 /** Title of the crosshair marker, also used to find the previous one */
 const CROSSHAIR_TITLE = 'Viseur';
 /** Closest zoom when fitting the extent of an address */
 const ADDRESS_MAX_ZOOM = 17;
 
 interface LocateButtonProps {
-  onLocationUpdate: (coordinates: [number, number]) => void;
+  /** The crosshair was placed: at the device's position, at an address, or at the map centre when the position failed */
+  onLocationUpdate: (coordinates: [number, number], source: CrosshairSource) => void;
   onErrorUpdate: (error: string | null) => void;
   onLocationMarkerUpdate?: (marker: L.Marker | null) => void;
 }
@@ -82,7 +86,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
   };
 
   // Créer un marqueur avec icône croix personnalisée
-  const createLocationMarker = (coordinates: [number, number], bounds?: L.LatLngBoundsExpression) => {
+  const createLocationMarker = (coordinates: [number, number], source: CrosshairSource, bounds?: L.LatLngBoundsExpression) => {
     // Supprimer les anciens marqueurs de position
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker && layer.options.title === CROSSHAIR_TITLE) {
@@ -99,7 +103,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
     marker.addTo(map);
     
     // Appeler les callbacks
-    onLocationUpdate(coordinates);
+    onLocationUpdate(coordinates, source);
     if (onLocationMarkerUpdate) {
       onLocationMarkerUpdate(marker);
     }
@@ -121,7 +125,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
           const { latitude, longitude } = position.coords;
           const newCoordinates: [number, number] = [latitude, longitude];
           
-          createLocationMarker(newCoordinates);
+          createLocationMarker(newCoordinates, 'gps');
         },
         (error) => {
           let errorMessage = "Impossible d'obtenir votre position";
@@ -140,7 +144,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
           
           // En cas d'erreur, ajouter un marqueur au centre de la carte
           const centerCoords = map.getCenter();
-          createLocationMarker([centerCoords.lat, centerCoords.lng]);
+          createLocationMarker([centerCoords.lat, centerCoords.lng], 'center');
           
           onErrorUpdate(errorMessage + " (marqueur ajouté au centre)");
         },
@@ -153,7 +157,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
     } else {
       // Ajouter un marqueur au centre de la carte
       const centerCoords = map.getCenter();
-      createLocationMarker([centerCoords.lat, centerCoords.lng]);
+      createLocationMarker([centerCoords.lat, centerCoords.lng], 'center');
       onErrorUpdate("La géolocalisation n'est pas supportée");
     }
   };
@@ -171,7 +175,7 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
   const handleAddress = (suggestion: AddressSuggestion) => {
     close();
     onErrorUpdate(null);
-    createLocationMarker([suggestion.latitude, suggestion.longitude], suggestion.bounds);
+    createLocationMarker([suggestion.latitude, suggestion.longitude], 'address', suggestion.bounds);
   };
 
   return (

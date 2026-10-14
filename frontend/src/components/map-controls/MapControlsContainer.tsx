@@ -1,11 +1,13 @@
-import LocateButton from './LocateButton';
+import LocateButton, { type CrosshairSource } from './LocateButton';
 import LayerControlsButton from './LayerControlsButton';
 import AddActionsButton from './AddActionsButton';
 import { ErrorAlert } from './MapFeedback';
 
 interface MapControlsContainerProps {
   error: string | null;
-  onLocationUpdate: (coordinates: [number, number]) => void;
+  onLocationUpdate: (coordinates: [number, number], source: CrosshairSource) => void;
+  /** Where the crosshair was placed from, null while it is not on the map */
+  crosshair?: CrosshairSource | null;
   onErrorUpdate: (error: string | null) => void;
   showApiariesButton?: boolean;
   showNestsButton?: boolean;
@@ -27,6 +29,7 @@ export default function MapControlsContainer({
   onQuickHornetCapture,
   onAddTrap,
   onScanTag,
+  crosshair = null,
   raised = false,
 }: MapControlsContainerProps) {
   // The quick capture needs the position and the compass
@@ -49,6 +52,7 @@ export default function MapControlsContainer({
           onQuickHornetCapture={compassSupported ? onQuickHornetCapture : undefined}
           onAddTrap={onAddTrap}
           onScanTag={onScanTag}
+          crosshair={crosshair}
         />
       </div>
       <ErrorAlert error={error} onClose={() => onErrorUpdate(null)} />

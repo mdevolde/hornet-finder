@@ -22,6 +22,7 @@ import ApiaryCircle from './ApiaryCircle';
 import NestMarker from '../markers/NestMarker';
 import TrapMarker from '../markers/TrapMarker';
 import MapControlsContainer from '../map-controls';
+import type { CrosshairSource } from '../map-controls/LocateButton';
 import MapEventHandler from './MapEventHandler';
 import HornetInfoPopup from '../popups/HornetInfoPopup';
 import HornetReturnZoneInfoPopup from '../popups/HornetReturnZoneInfoPopup';
@@ -148,6 +149,11 @@ export default function InteractiveMap({
   const [showCompassCapture, setShowCompassCapture] = useState(false);
   const [showGeolocationSpinner, setShowGeolocationSpinner] = useState(false);
   const [compassCapturedPosition, setCompassCapturedPosition] = useState<MapPoint | null>(null);
+  // The sighting is recorded at the crosshair (placed at an address), not at a GPS fix
+  const [compassFixedPosition, setCompassFixedPosition] = useState(false);
+  // Crosshair placed from the position sheet: where the "+" additions go. Kept
+  // apart from `coordinates`, which follows the map centre on every move
+  const [crosshair, setCrosshair] = useState<{ point: MapPoint; source: CrosshairSource } | null>(null);
 
   // Position en attente pendant un déplacement de piège (avant validation)
   const [pendingTrapPosition, setPendingTrapPosition] = useState<MapPoint | null>(null);
@@ -411,7 +417,7 @@ export default function InteractiveMap({
   const selectorPosition = (lat?: number, lng?: number): MapPoint => {
     const current = modalOfKind('item-selector')?.position;
     if (lat !== undefined && lng !== undefined) return { lat, lng };
-    return current ?? { lat: coordinates[0], lng: coordinates[1] };
+    return current ?? crosshair?.point ?? { lat: coordinates[0], lng: coordinates[1] };
   };
 
   const handleSelectHornet = (lat?: number, lng?: number) => {
@@ -511,8 +517,12 @@ export default function InteractiveMap({
       return;
     }
 
-    // Obtenir la position actuelle pour la capture
-    if (navigator.geolocation) {
+    // A crosshair placed at an address is where the hornet was seen: no GPS fix
+    const atAddress = crosshair?.source === 'address';
+    setCompassFixedPosition(atAddress);
+    if (atAddress) {
+      setCompassCapturedPosition(crosshair.point);
+    } else if (navigator.geolocation) {
       // Afficher le spinner de géolocalisation
       setShowGeolocationSpinner(true);
       
@@ -586,7 +596,8 @@ export default function InteractiveMap({
       >
         <MapControlsContainer 
           error={error}
-          onLocationUpdate={setCoordinates}
+          onLocationUpdate={(point, source) => setCrosshair({ point: { lat: point[0], lng: point[1] }, source })}
+          crosshair={crosshair?.source ?? null}
           onErrorUpdate={() => {}} // Les erreurs sont maintenant gérées par Redux
           showApiariesButton={auth.isAuthenticated && (isAdmin || canAddApiary)}
           showNestsButton={true} // Tous les utilisateurs peuvent voir les nids (détruits pour non-authentifiés, tous pour authentifiés)
@@ -594,7 +605,7 @@ export default function InteractiveMap({
           onShowNearestNests={canSeeAllNests ? () => openModal({ kind: 'nearest-nests' }) : undefined}
           onQuickHornetCapture={handleQuickHornetCapture}
           onAddTrap={canAddTrap && showTraps
-            ? () => openModal({ kind: 'add-trap', position: null })
+            ? () => openModal({ kind: 'add-trap', position: crosshair?.point ?? null })
             : undefined}
           onScanTag={auth.isAuthenticated && showTraps ? openScanner : undefined}
           raised={movingTrapId !== null}
@@ -829,6 +840,7 @@ export default function InteractiveMap({
         onCapture={handleCompassDirectionCapture}
         initialLatitude={compassCapturedPosition?.lat}
         initialLongitude={compassCapturedPosition?.lng}
+        fixedPosition={compassFixedPosition}
         showPermissionModal={showCompassPermissionModal}
         onRequestOrientationPermission={handleRequestOrientationPermission}
         onCancelPermissionModal={() => setShowCompassPermissionModal(false)}
