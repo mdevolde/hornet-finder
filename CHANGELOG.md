@@ -10,6 +10,25 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+### Added
+- Trap reminders: each trap type can set a reading delay and an attractant delay (in days).
+  The owner of a trap gets a notification at 9:00 (10:00 on Sundays) the day a reading or
+  a renewal of the attractant is due, then every 2 days, 3 times at most; from 3 reminders
+  at once, a single summary. A shelved trap has none. A scheduler service sends them
+  (prod note 0025).
+- Traps module: it opens on a new "À relever" tab (late, today, soon, with "Relever" and
+  "Recharger"); the landing tile counts what is due.
+- Notifications module: this device on or off with a test, and the kinds of notifications
+  (reading and attractant reminders, group and platform messages) to turn off, with
+  switches that look like the platform's (iOS or Material). A first question about
+  notifications appears once per device, from the second visit.
+- Trap menu: "Remiser" and "Remettre en service".
+
+### Changed
+- Traps module: the former list is the "Gérer" tab; a trap is highlighted as late after
+  the reading delay of its type (7 days when the type sets none).
+- Profile dialog: the notifications row now leads to the Notifications module.
+
 ## [1.4.0] - 2026-10-13
 
 ### Security

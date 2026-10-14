@@ -38,7 +38,41 @@ Une notification doit toujours s'afficher : iOS et Chrome retirent l'autorisatio
 3. Avec un second compte administrateur de groupe : « Notifier » un membre, puis le groupe.
 4. *Administration → Notifications* : statut (accepté / appareil retiré / injoignable) et délai d'affichage de chaque appareil. Tester aussi application fermée, écran verrouillé, mode économie d'énergie.
 
+## Rappels des pièges
+
+Les propriétaires de pièges reçoivent un rappel quand un relevé ou le renouvellement de l'attractif est dû. Code : `backend/hornet/reminders.py` ; écran : onglet *Pièges → À relever*.
+
+- **Délais** : par type de piège (*Administration → Types de pièges*), `reading_interval_days` (relevé tous les N jours) et `refill_interval_days` (attractif tous les N jours). Vide : pas de rappel.
+- **Ce qui est dû** est calculé à partir du journal, jamais stocké : un relevé est dû N jours après le dernier relevé (un événement `catch`, même vide) ou, sans relevé, après l'installation ; l'attractif N jours après la dernière recharge (`refill`) ou l'installation. Une inspection ne compte pas. Un relevé antérieur à une remise en service ne compte pas non plus.
+- **Destinataire** : le propriétaire seul. Un piège remisé (`active` faux) ou sans propriétaire n'a pas de rappel ; *Remettre en service* (une installation) relance les deux délais.
+- **Heure** : 9 h, 10 h le dimanche (heure de Bruxelles) ; un passage en retard rattrape jusqu'à 20 h, rien après.
+- **Répétition** : le jour de l'échéance, puis tous les 2 jours tant que rien n'est enregistré, 3 relances au plus, puis plus rien jusqu'au prochain événement du piège (`TrapReminder` garde la date de référence et le nombre d'envois).
+- **Regroupement** : une notification par piège et par sorte de rappel ; à partir de 3 rappels pour une même personne dans un même passage, un seul message récapitulatif. Un rappel répété pour le même piège remplace le précédent à l'écran (`tag`).
+- **Clic** : la notification ouvre `/traps/due?trap=<id>` (ou `/traps/due` pour un récapitulatif) ; si l'application est déjà ouverte, le service worker la ramène au premier plan et la fait naviguer sans la recharger.
+- **Qui est compté** : seulement les propriétaires qui ont un appareil abonné et la sorte de rappel activée ; quelqu'un qui s'abonne plus tard reçoit ce qui est dû à ce moment-là. Les rappels ne sont pas inscrits au journal d'audit (action du système, répétée chaque jour).
+
+### Le service planifié
+
+Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hornet-finder-scheduler`) est l'image de l'API lancée avec `manage.py run_scheduler` au lieu de gunicorn (surcharge de l'`entrypoint`). Toutes les 10 minutes, il fait un passage : envoyer ce qui est dû aujourd'hui et pas encore parti. Le passage est idempotent et prend un verrou PostgreSQL (`pg_try_advisory_xact_lock`), deux passages simultanés n'envoient donc rien en double. Tant que l'API n'a pas appliqué ses migrations, il réessaie au passage suivant.
+
+- `./deploy.sh -s scheduler` le redémarre seul ; `./logs.sh scheduler` montre ses passages.
+- `docker compose exec <service api> python manage.py send_trap_reminders --dry-run` affiche ce qui partirait maintenant, sans rien envoyer (`--now 2026-10-20T09:05` pour simuler une heure).
+
+## Réglages de chacun
+
+Le module *Notifications* (tuile de l'accueil) réunit :
+
+- **Cet appareil** : l'abonnement de l'appareil (interrupteur) et l'essai. Par appareil.
+- **Me prévenir pour** : rappels de relevé, rappels d'attractif, messages de mon groupe, messages de la plateforme. Par compte, pour tous les appareils ; tout est activé par défaut, seul ce qui est coupé est enregistré (`User.notification_prefs`). Couper des messages d'administrateur demande une confirmation. Un message d'un administrateur de la plateforme est de la sorte « plateforme », celui d'un administrateur de groupe de la sorte « groupe » ; ceux qui l'ont coupée sont comptés à part (`muted`) dans le résultat de l'envoi.
+- Les interrupteurs ont l'apparence de la plateforme : iOS sur iPhone et iPad, Material ailleurs (`data-platform` sur `<html>`, `components/ui/Switch.tsx`).
+
+### Première demande
+
+Un volet « Recevoir les rappels ? » s'ouvre une seule fois par appareil (`PushPromptSheet`) : à partir de la 2<sup>e</sup> visite, si le navigateur peut recevoir des notifications et ne les a jamais autorisées ni refusées, jamais sur un autre dialogue ni le jour où la suggestion d'installation s'est montrée. « Activer » est le geste qui déclenche la demande du navigateur (obligatoire sur iPhone) ; « Plus tard » repousse de 30 jours ; « Ne plus demander » arrête. Sur iPhone, hors application installée, c'est la suggestion d'installation qui passe d'abord.
+
 ## Limites connues
+
+- **iPhone et mise à jour** : après un déploiement, l'ancien service worker peut rester actif tant que l'application n'a pas été fermée complètement (balayée du sélecteur d'applications) puis rouvrue. Un abonnement créé avec un ancien worker sans gestion du push reçoit les messages sans rien afficher : c'est ce qui a été observé en test.
 
 - Le contenu s'affiche sur l'écran verrouillé : rien de confidentiel.
 - La pastille est un compteur approximatif : deux pushes reçus en même temps peuvent n'en compter qu'un, et une notification balayée à la main du panneau n'est pas retirée du compte avant la prochaine ouverture.

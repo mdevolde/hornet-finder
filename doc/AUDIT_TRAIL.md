@@ -76,6 +76,7 @@ sa délégation) ou « à l'association X » en une requête.
 | `audit` | `exported` (export CSV du journal) |
 
 Hors périmètre : lectures, tentatives refusées (dans les logs), photo de profil,
+rappels des pièges (envoyés par le système, chaque jour), préférences de notification,
 effets techniques (recalcul des captures), synchronisation de `group_paths`,
 commandes de gestion (`sync_group_names`, `fetch_species_photos`).
 
