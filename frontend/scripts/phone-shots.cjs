@@ -6,6 +6,7 @@
  * scroll sideways, and nothing visible in an open dialog or sheet may stick
  * out of the screen. Findings are printed as WARN lines.
  */
+const crypto = require('crypto');
 const { webkit, chromium, devices } = require('playwright');
 
 const BASE = process.env.BASE_URL;
@@ -19,6 +20,33 @@ const DEVICES = {
   w320: { engine: webkit, profile: { ...devices['iPhone SE'], viewport: { width: 320, height: 568 } } },
   pixel7: { engine: chromium, profile: devices['Pixel 7'] },
   galaxy: { engine: chromium, profile: { ...devices['Galaxy S9+'], viewport: { width: 360, height: 740 } } },
+};
+
+/**
+ * TOTP code of the test admin (RFC 6238: base32 secret, HmacSHA1, 6 digits,
+ * 30 s, the realm OTP policy). Keycloak refuses a code it already accepted, so
+ * this waits for a window later than the last one used, by the API token
+ * request of ui-shots.sh first (KC_TOTP_USED_STEP) and by each login after it.
+ */
+let lastOtpStep = Number(process.env.KC_TOTP_USED_STEP || 0);
+const nextOtp = async () => {
+  while (Math.floor(Date.now() / 30000) <= lastOtpStep) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  const step = Math.floor(Date.now() / 30000);
+  lastOtpStep = step;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const c of process.env.KC_TOTP_SECRET.replace(/[\s=]/g, '').toUpperCase()) {
+    bits += alphabet.indexOf(c).toString(2).padStart(5, '0');
+  }
+  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(step));
+  const digest = crypto.createHmac('sha1', key).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const code = (digest.readUInt32BE(offset) & 0x7fffffff) % 1000000;
+  return String(code).padStart(6, '0');
 };
 
 let warnings = 0;
@@ -140,6 +168,10 @@ async function walk(name) {
       await page.waitForSelector('input[name=password]');
     }
     await page.fill('input[name=password]', process.env.KC_PASS);
+    await page.locator('#kc-login').click();
+    // mfa-required (admin role): the second factor comes on its own screen
+    await page.waitForSelector('input[name=otp]', { timeout: 10000 });
+    await page.fill('input[name=otp]', await nextOtp());
     await page.locator('#kc-login').click();
     await page.waitForURL(`${BASE}/**`);
     await page.waitForLoadState('networkidle');

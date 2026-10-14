@@ -3,7 +3,7 @@
 # Phone screenshots of the dev frontend, to check the mobile UI on the real
 # rendering engines: WebKit (iPhone 14, iPhone SE, 320 px) and Chromium
 # (Pixel 7, 360 px Galaxy). Playwright runs in its Docker image, signs in with
-# the dev-only test admin (KC_TEST_* in .env) and walks the main screens,
+# the dev-only test admin (KC_TEST_* in .env, TOTP included) and walks the main screens,
 # opening dialogs without ever submitting them.
 #
 # By default (no -d) only ip14 and pixel7 run, one WebKit and one Chromium
@@ -31,11 +31,12 @@ if [[ -f ./.env ]]; then
 else
     echo "WARN: no .env, using the variables of the environment." >&2
 fi
+. ./lib/kc-test.sh
 
 # Everything the script reads, checked up front so a missing value stops it
 # before anything is created on the dev server
 MISSING=()
-for var in APP_ENV HOST KC_HOSTNAME KC_TEST_CLIENT_ID KC_TEST_CLIENT_SECRET KC_TEST_USER_PASSWORD; do
+for var in APP_ENV HOST KC_HOSTNAME KC_TEST_CLIENT_ID KC_TEST_CLIENT_SECRET KC_TEST_USER_PASSWORD KC_TEST_TOTP_SECRET; do
     [[ -n "${!var:-}" ]] || MISSING+=("$var")
 done
 if (( ${#MISSING[@]} )); then
@@ -60,17 +61,13 @@ done
 
 USER_EMAIL="t-admin@example.invalid"
 BASE="https://${HOST}/api"
-AUTH="https://${KC_HOSTNAME}/realms/hornet-finder-dev/protocol/openid-connect/token"
 # The map opens on DEFAULT_GEOLOCATION (Vedrin); the fixtures sit in its left
 # half, clear of the map controls and of the real data around the centre
 LAT=50.4930
 LNG=4.8800
 
-TOKEN=$(curl -sk -X POST "$AUTH" -d "client_id=$KC_TEST_CLIENT_ID" --data-urlencode "client_secret=$KC_TEST_CLIENT_SECRET" \
-    -d "username=$USER_EMAIL" --data-urlencode "password=$KC_TEST_USER_PASSWORD" \
-    -d "grant_type=password" -d "scope=openid membership" \
-    | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))")
-if [[ -z "$TOKEN" ]]; then echo "Could not get a token for $USER_EMAIL." >&2; exit 1; fi
+# t-admin carries mfa-required: its password grant needs the TOTP code
+TOKEN=$(kc_test_token "$USER_EMAIL" otp) || exit 1
 H=(-H "Authorization: Bearer $TOKEN")
 
 # create <path> <curl args...>: prints the id of the created object
@@ -133,6 +130,7 @@ fi
 
 docker run --rm --ipc=host "${NET_ARGS[@]}" --user "$(id -u):$(id -g)" -e HOME=/tmp \
     -e BASE_URL="https://${HOST}" -e KC_USER="$USER_EMAIL" -e KC_PASS="$KC_TEST_USER_PASSWORD" \
+    -e KC_TOTP_SECRET="$KC_TEST_TOTP_SECRET" -e KC_TOTP_USED_STEP="$(( $(date +%s) / 30 ))" \
     -e LAT="$LAT" -e LNG="$LNG" -e DEVICES="${DEVICES[*]:-}" \
     -v "$SCRIPT_DIR/frontend/scripts:/scripts:ro" -v "$SCRIPT_DIR/$OUT:/out" \
     -v "$SCRIPT_DIR/.cache/ui-shots:/work" -w /work \
