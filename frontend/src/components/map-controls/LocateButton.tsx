@@ -1,5 +1,15 @@
+import { useState } from "react";
 import { useMap } from "react-leaflet";
+import { ListGroup } from "react-bootstrap";
 import * as L from "leaflet";
+import { BottomSheet } from "../ui";
+import { AddressSearch } from "../traps";
+import type { AddressSuggestion } from "../../utils/geocoding";
+
+/** Title of the crosshair marker, also used to find the previous one */
+const CROSSHAIR_TITLE = 'Viseur';
+/** Closest zoom when fitting the extent of an address */
+const ADDRESS_MAX_ZOOM = 17;
 
 interface LocateButtonProps {
   onLocationUpdate: (coordinates: [number, number]) => void;
@@ -7,8 +17,15 @@ interface LocateButtonProps {
   onLocationMarkerUpdate?: (marker: L.Marker | null) => void;
 }
 
+/**
+ * The position map button: places the crosshair (the default position of the
+ * additions) at the user's position or at an address, and centres the map.
+ */
 export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocationMarkerUpdate }: LocateButtonProps) {
   const map = useMap();
+  const [open, setOpen] = useState(false);
+  // The address field makes the sheet tall, so the keyboard leaves the suggestions visible
+  const [searching, setSearching] = useState(false);
 
   // Créer une icône en forme de croix avec CSS inline robuste
   const createCrossLocationIcon = () => {
@@ -65,17 +82,17 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
   };
 
   // Créer un marqueur avec icône croix personnalisée
-  const createLocationMarker = (coordinates: [number, number]) => {
+  const createLocationMarker = (coordinates: [number, number], bounds?: L.LatLngBoundsExpression) => {
     // Supprimer les anciens marqueurs de position
     map.eachLayer((layer) => {
-      if (layer instanceof L.Marker && layer.options.title === 'Ma position') {
+      if (layer instanceof L.Marker && layer.options.title === CROSSHAIR_TITLE) {
         map.removeLayer(layer);
       }
     });
     
     const marker = L.marker(coordinates, {
       icon: createCrossLocationIcon(),
-      title: 'Ma position',
+      title: CROSSHAIR_TITLE,
       zIndexOffset: 1000
     });
     
@@ -87,8 +104,12 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
       onLocationMarkerUpdate(marker);
     }
     
-    // Centrer la carte sur la position
-    map.setView(coordinates, Math.max(map.getZoom(), 15));
+    // Centrer la carte sur la position, ou sur l'étendue du lieu (rue, commune)
+    if (bounds) {
+      map.fitBounds(bounds, { maxZoom: ADDRESS_MAX_ZOOM });
+    } else {
+      map.setView(coordinates, Math.max(map.getZoom(), 15));
+    }
     
     return marker;
   };
@@ -137,15 +158,53 @@ export default function LocateButton({ onLocationUpdate, onErrorUpdate, onLocati
     }
   };
 
+  const close = () => {
+    setOpen(false);
+    setSearching(false);
+  };
+
+  const handleMyPosition = () => {
+    close();
+    handleLocate();
+  };
+
+  const handleAddress = (suggestion: AddressSuggestion) => {
+    close();
+    onErrorUpdate(null);
+    createLocationMarker([suggestion.latitude, suggestion.longitude], suggestion.bounds);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={handleLocate}
-      className="map-fab"
-      aria-label="Ma position"
-      title="Centrer la carte sur ma position"
-    >
-      <i className="bi bi-crosshair" aria-hidden="true" />
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="map-fab"
+        aria-label="Position"
+        title="Placer le viseur : ma position ou une adresse"
+      >
+        <i className="bi bi-crosshair" aria-hidden="true" />
+      </button>
+
+      <BottomSheet show={open} onHide={close} title="Placer le viseur">
+        <div className={searching ? 'locate-sheet-searching' : undefined}>
+          {/* The field comes first: its suggestions then open high on the screen */}
+          <div onFocus={() => setSearching(true)}>
+            <AddressSearch label="Adresse" onSelect={handleAddress} />
+          </div>
+          <ListGroup variant="flush">
+            <ListGroup.Item action onClick={handleMyPosition} className="d-flex align-items-center gap-3 px-1 py-2">
+              <span className="fs-4 text-center flex-shrink-0" style={{ width: '2rem' }}>
+                <i className="bi bi-geo-alt-fill" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="d-block fw-semibold">Ma position</span>
+                <span className="d-block small text-muted">Géolocalisation de l'appareil</span>
+              </span>
+            </ListGroup.Item>
+          </ListGroup>
+        </div>
+      </BottomSheet>
+    </>
   );
 }
