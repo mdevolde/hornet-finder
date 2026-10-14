@@ -45,6 +45,11 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Switches: every switch of the app takes the platform's look (iOS or Material),
   centred on its label, a finger's height.
 
+### Fixed
+- Map: the "+" additions go to the crosshair placed from the position sheet (a trap
+  at the crosshair; a hornet "vu d'ici" at the crosshair when it was placed at an
+  address, otherwise at the GPS position), instead of the map centre or the GPS.
+
 ## [1.4.0] - 2026-10-13
 
 ### Security
