@@ -50,6 +50,7 @@ const nextOtp = async () => {
 };
 
 let warnings = 0;
+let failures = 0;
 
 /** A 64x64 orange PNG, the photo given to the file inputs */
 const SAMPLE_PHOTO = Buffer.from(
@@ -74,6 +75,20 @@ async function walk(name) {
   });
   const page = await context.newPage();
   let index = 0;
+
+  // Requests that fail or answer >= 400, by host: a blocked host (tiles behind
+  // a filtering proxy, say) otherwise only shows up as empty screens
+  const netErrors = new Map();
+  const noteNetError = (url, reason) => {
+    const host = new URL(url).host;
+    const entry = netErrors.get(host) || { count: 0, reason };
+    entry.count += 1;
+    netErrors.set(host, entry);
+  };
+  page.on('requestfailed', (request) => noteNetError(request.url(), request.failure()?.errorText || 'failed'));
+  page.on('response', (response) => {
+    if (response.status() >= 400) noteNetError(response.url(), `HTTP ${response.status()}`);
+  });
 
   const overflow = () => page.evaluate(() => {
     const width = window.innerWidth;
@@ -114,6 +129,7 @@ async function walk(name) {
     try {
       await action();
     } catch (error) {
+      failures += 1;
       console.log(`FAIL ${name} ${label}: ${String(error).split('\n')[0]}`);
     }
   };
@@ -517,6 +533,7 @@ async function walk(name) {
     await shot('admin-trap-types-menu');
   });
 
+  netErrors.forEach((entry, host) => console.log(`NET ${name} ${host}: ${entry.count} request(s), ${entry.reason}`));
   await browser.close();
 }
 
@@ -530,5 +547,6 @@ async function walk(name) {
     console.log(`== ${name}`);
     await walk(name);
   }
-  console.log(`${warnings} overflow warning(s)`);
+  console.log(`${warnings} overflow warning(s), ${failures} failed step(s)`);
+  if (failures) process.exitCode = 1;
 })();
