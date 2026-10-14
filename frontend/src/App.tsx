@@ -107,6 +107,8 @@ function App() {
       {/* One trap manager for these paths, so resolving a tag or scanning returns to /traps without remounting it */}
       <Route element={<Traps />}>
         <Route path="/traps" element={null} />
+        {/* First tab of the module: what the user's traps wait for (reminders) */}
+        <Route path="/traps/due" element={null} />
         <Route path="/tag/:tagValue" element={null} />
         {/* Shortcut of the installed app (long press on its icon): opens the scanner */}
         <Route path="/scan" element={null} />
