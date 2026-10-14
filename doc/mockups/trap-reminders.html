@@ -131,7 +131,7 @@
 <body>
 <header class="doc">
   <h1>Rappels des pièges et réglages des notifications – maquette (phone d'abord, 390 px)</h1>
-  <p>Maquette statique, aucune donnée réelle ; numéros, noms, adresses et <b>délais</b> sont des exemples inventés. Écrans : la vue « À relever » et la gestion sous deux boutons du module Pièges (1-2), le module « Notifications » avec l'interrupteur de chaque plateforme (3-4, 5), la notification reçue (6), le réglage des délais par type de piège (7).</p>
+  <p>Maquette statique, aucune donnée réelle ; numéros, noms, adresses et <b>délais</b> sont des exemples inventés. Écrans : la vue « À relever » et la gestion sous deux boutons du module Pièges (1-2), le module « Notifications » avec l'interrupteur de chaque plateforme (3-4, 5), la notification reçue (6), le réglage des délais par type de piège (7), la première demande d'autorisation (8), l'avertissement avant de couper des messages (9), remiser et remettre en service (10).</p>
 </header>
 <div class="board">
 
@@ -226,6 +226,59 @@
       </div>
       <div class="ft"><button class="btn pri" style="margin:0">Enregistrer</button></div>
     </div></div>
+  </figure>
+
+  <figure>
+    <figcaption><b>8. Première demande, au démarrage.</b> Un volet (<code>BottomSheet</code>) qui s'ouvre une seule fois par appareil, pas sur un autre dialogue, et jamais avant la 2<sup>e</sup> ou 3<sup>e</sup> visite ni le même jour que la suggestion d'installation. « Activer » est le geste qui déclenche la demande du système (obligatoire sur iPhone). « Plus tard » repousse de 30 jours, « Ne plus demander » arrête. Sur iPhone hors écran d'accueil, c'est la suggestion d'installation qui passe d'abord.</figcaption>
+    <div class="phone"><div class="nav"><a class="back">‹ Accueil</a><span class="cur">Pièges</span><span class="menu">☰</span></div><div class="body"><div class="tabs"><span class="on">À relever <b class="cnt">3</b></span><span>Gérer</span></div>
+        <div class="due"><div class="ico">🪤</div><div class="grow"><div class="name">#12 · Harpe électrique</div><div class="sub">Dernier relevé il y a 5 j · tous les 2 j</div><div class="late">En retard de 3 j</div></div><button class="btn sm pri">Relever</button></div>
+        <div class="due"><div class="ico">🧪</div><div class="grow"><div class="name">#8 · Fataltrap</div><div class="sub">Dernière recharge il y a 15 j</div><div class="late">En retard de 1 j</div></div><button class="btn sm pri">Recharger</button></div></div>
+      <div class="veil"></div>
+      <div class="sheet">
+        <div class="row" style="border:0;padding-bottom:0"><div class="av" style="background:var(--pri);color:#fff">🔔</div><div class="grow"><h2 style="margin:0">Recevoir les rappels ? <span class="help">?</span></h2><div class="sub">Un message quand un piège est à relever.</div></div></div>
+        <button class="btn pri" style="margin-top:14px">🔔 Activer</button>
+        <button class="btn">Plus tard</button>
+        <button class="btn" style="border:0;color:var(--muted)">Ne plus demander</button>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption><b>9. Couper des messages : un avertissement.</b> L'interrupteur reste allumé tant que la personne n'a pas confirmé. S'applique aux deux sortes de messages d'administrateur ; couper les rappels de pièges se fait sans avertissement (la vue « À relever » reste).</figcaption>
+    <div class="phone"><div class="nav"><a class="back">‹ Accueil</a><span class="cur">Notifications</span><span class="menu">☰</span></div>
+      <div class="body"><h3 class="sec" style="margin-top:2px">Me prévenir pour</h3>
+        <div class="card">
+          <div class="trow"><div class="ic">🪤</div><div class="grow"><div class="name" style="font-weight:500">Rappels de relevé <span class="help">?</span></div></div><span class="sw-ios on"></span></div>
+          <div class="trow"><div class="ic">👥</div><div class="grow"><div class="name" style="font-weight:500">Messages de mon groupe <span class="help">?</span></div></div><span class="sw-ios on"></span></div>
+          <div class="trow"><div class="ic">📣</div><div class="grow"><div class="name" style="font-weight:500">Messages de la plateforme <span class="help">?</span></div></div><span class="sw-ios on"></span></div>
+        </div></div>
+      <div class="veil"></div>
+      <div class="modal">
+        <h2>Ne plus recevoir les messages de la plateforme ?</h2>
+        <p>Les administrateurs s'en servent pour des consignes ou des changements qui peuvent vous concerner. Vous pourrez les réactiver ici à tout moment.</p>
+        <button class="btn" style="background:#b26a00;color:#fff;border-color:#b26a00;font-weight:600">Ne plus recevoir</button>
+        <button class="btn">Annuler</button>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption><b>10. Remiser et remettre en service.</b> Ces deux actions existent déjà comme entrées du journal (« Retrait » et « Installation »), mais cachées dans le formulaire d'entrée. Je propose deux actions directes dans le menu d'un piège : « Remiser » pour un piège en service, « Remettre en service » pour un piège remisé (l'installation repart d'un état vide et relance les deux délais). Un piège remisé n'a plus de rappel.</figcaption>
+    <div class="phone"><div class="nav"><a class="back">‹ Accueil</a><span class="cur">Pièges</span><span class="menu">☰</span></div>
+      <div class="body"><div class="tabs"><span>À relever <b class="cnt">3</b></span><span class="on">Gérer</span></div>
+        <div class="row"><div class="av">🪤</div><div class="grow"><div class="name">#8 Fataltrap</div><div class="sub">Chemin du Moulin · relevé il y a 5 j</div></div><button class="ib">⋯</button></div>
+        <div class="row" style="opacity:.6"><div class="av">🪤</div><div class="grow"><div class="name">#5 Harpe électrique <span class="badge">Remisé</span></div><div class="sub">Rue du Four · relevé le 2 nov.</div></div><button class="ib">⋯</button></div>
+      </div>
+      <div class="veil"></div>
+      <div class="sheet">
+        <div class="row" style="border:0"><div class="av">🪤</div><div class="grow"><h2>#8 · Fataltrap</h2><div class="sub">En service</div></div></div>
+        <button class="btn">🐝 Relever</button>
+        <button class="btn">🧪 Recharger</button>
+        <button class="btn">✏️ Modifier</button>
+        <button class="btn" style="color:var(--warn);border-color:var(--warn)">📦 Remiser</button>
+        <div class="sub" style="margin-top:8px">Piège remisé : « 📌 Remettre en service » à la place.</div>
+      </div>
+    </div>
   </figure>
 
 </div>
