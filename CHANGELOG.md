@@ -36,6 +36,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Profile dialog: the notifications row now leads to the Notifications module.
 - Address search: says when no address matches, and the suggestions no longer
   scroll inside their own box.
+- Map on a touch screen: the position, layers and add buttons sit at the bottom
+  right, within reach of the thumb ("+" lowest), above the trap move bar when it
+  shows; with a mouse they stay at the top right.
 
 ## [1.4.0] - 2026-10-13
 

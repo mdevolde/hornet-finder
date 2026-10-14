@@ -13,6 +13,8 @@ interface MapControlsContainerProps {
   onQuickHornetCapture?: () => void;
   onAddTrap?: () => void;
   onScanTag?: () => void;
+  /** A bar sits at the bottom of the map (trap move): the buttons go above it on a touch screen */
+  raised?: boolean;
 }
 
 export default function MapControlsContainer({ 
@@ -24,7 +26,8 @@ export default function MapControlsContainer({
   onShowNearestNests,
   onQuickHornetCapture,
   onAddTrap,
-  onScanTag
+  onScanTag,
+  raised = false,
 }: MapControlsContainerProps) {
   // The quick capture needs the position and the compass
   const compassSupported = Boolean(navigator.geolocation && window.DeviceOrientationEvent);
@@ -32,7 +35,7 @@ export default function MapControlsContainer({
   // At most three floating buttons: position, layers (with the filters) and add
   return (
     <>
-      <div className="map-controls-container">
+      <div className={`map-controls-container${raised ? ' map-controls-raised' : ''}`}>
         <LocateButton 
           onLocationUpdate={onLocationUpdate} 
           onErrorUpdate={onErrorUpdate} 

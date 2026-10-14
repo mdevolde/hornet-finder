@@ -171,6 +171,16 @@ async function walk(name) {
     await escape();
   });
 
+  // Position sheet: the device's position or an address (a real Nominatim search, one request)
+  await step('position-sheet', async () => {
+    await tap(page.locator('[aria-label="Position"]'));
+    await shot('map-position');
+    await tap(page.locator('.bottom-sheet input'));
+    await page.locator('.bottom-sheet input').fill('rue de Bruxelles Namur');
+    await shot('map-position-search', 2500);
+    await escape();
+  });
+
   /** Tap the fixture traps on the map: through their cluster first when they are grouped */
   const tapFixtureTrap = async (label) => {
     if (await page.locator('.map-cluster').count()) {

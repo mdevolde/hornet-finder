@@ -597,6 +597,7 @@ export default function InteractiveMap({
             ? () => openModal({ kind: 'add-trap', position: null })
             : undefined}
           onScanTag={auth.isAuthenticated && showTraps ? openScanner : undefined}
+          raised={movingTrapId !== null}
         />
         <MapRefHandler onMapReady={handleMapReady} />
         <MapEventHandler />
