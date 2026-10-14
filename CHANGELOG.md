@@ -26,11 +26,16 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Notifications retention: the history of sent notifications is deleted after 90 days, and
   a device on which the app was not opened for 6 months stops receiving them (it registers
   again when the app is opened). The privacy policy says so.
+- Map: the position button now opens a sheet to place the crosshair either at
+  the device's position or at an address (Nominatim search); the map fits the
+  extent of the place found (a house, a street, a village).
 
 ### Changed
 - Traps module: the former list is the "Gérer" tab; a trap is highlighted as late after
   the reading delay of its type (7 days when the type sets none).
 - Profile dialog: the notifications row now leads to the Notifications module.
+- Address search: says when no address matches, and the suggestions no longer
+  scroll inside their own box.
 
 ## [1.4.0] - 2026-10-13
 

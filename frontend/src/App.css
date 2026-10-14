@@ -1677,3 +1677,9 @@ html[data-platform="material"] .app-switch .form-check-input:checked {
 .days-input {
   max-width: 7rem;
 }
+
+/* Position sheet while typing an address: tall enough for the suggestions to stay above the keyboard */
+.locate-sheet-searching {
+  min-height: 70vh;
+  min-height: 70dvh;
+}
