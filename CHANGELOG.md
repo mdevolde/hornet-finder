@@ -11,6 +11,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ## [Unreleased]
 
 ### Added
+- Appearance: a dark mode (light, dark, or follow the system, the default) and two themes,
+  Velutina (charcoal and amber, the default) and Forêt (green and ochre), chosen from the
+  "Apparence" entry of the menu. The choice is kept on the device and applies before the first
+  paint. Street maps are darkened in dark mode; the satellite view is unchanged.
 - Trap reminders: each trap type can set a reading delay and an attractant delay (in days).
   The owner of a trap gets a notification at 9:00 (10:00 on Sundays) the day a reading or
   a renewal of the attractant is due, then every 2 days, 3 times at most; from 3 reminders
