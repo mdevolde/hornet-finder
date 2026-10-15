@@ -260,12 +260,20 @@ class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
 class PublicNestSerializer(GPSValidationMixin, serializers.ModelSerializer):
     """
     Serializer for public access to destroyed nests.
-    Excludes sensitive information like created_by.
+    Excludes sensitive information like created_by. The address and the comments of a
+    nest on private ground (a garden) are left out: they may identify the occupants.
     """
     class Meta:
         model = Nest
         fields = ['id', 'longitude', 'latitude', 'public_place', 'address', 'destroyed', 'destroyed_at', 'created_at', 'comments', 'archived', 'archived_at']
         read_only_fields = ['id', 'created_at', 'archived', 'archived_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not instance.public_place:
+            data['address'] = ''
+            data['comments'] = ''
+        return data
 
 class ApiarySerializer(GPSValidationMixin, serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()

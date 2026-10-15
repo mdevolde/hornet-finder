@@ -93,6 +93,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ### Security
 - The list of hornet sightings no longer shows who reported them to anonymous visitors nor to
   trappers (personal data, GDPR); nest hunters, beekeepers and admins still see the author.
+- The public list of destroyed nests no longer carries the address and comments of a nest on
+  private ground. The privacy policy says what is visible without signing in.
 
 ## [1.4.0] - 2026-10-13
 

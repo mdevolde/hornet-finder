@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '../utils/format';
 
 /** Date of the last revision of this policy */
-const LAST_UPDATED = '2026-10-14T12:00:00';
+const LAST_UPDATED = '2026-10-15T12:00:00';
 
 export default function PrivacyPolicy() {
   return (
@@ -78,6 +78,12 @@ export default function PrivacyPolicy() {
               (collectivités territoriales, services environnementaux, associations de lutte 
               contre le frelon asiatique) dans le cadre de la mission d'intérêt public de 
               l'application.
+            </p>
+            <p>
+              Sans connexion, la carte montre les nids détruits et les observations de frelons 
+              (position, date, direction de vol), jamais le nom de la personne qui les a signalés. 
+              L'adresse et les commentaires d'un nid situé sur un terrain privé ne sont visibles 
+              que des utilisateurs connectés autorisés.
             </p>
             <p>
               Nous ne vendons, ne louons ni ne partageons vos données personnelles à des fins 

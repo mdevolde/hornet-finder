@@ -3105,6 +3105,16 @@ class TradeSeparationTests(TestCase):
         force_authenticate(request, user=self.hunter_user)
         self.assertEqual(HornetViewSet.as_view({'post': 'create'})(request).status_code, 201)
 
+    def test_destroyed_nests_on_private_ground_are_public_without_address_nor_comments(self):
+        private = _make_nest(timezone.now().year)
+        private.destroyed, private.public_place = True, False
+        private.address, private.comments = '1 rue Privée', 'chez M. X'
+        private.save()
+        request = self.factory.get('/nests/destroyed/?lat=50.5&lon=4.5&radius=5')
+        response = NestViewSet.as_view({'get': 'destroyed'})(request)
+        item = next(i for i in response.data if i['id'] == private.id)
+        self.assertEqual((item['address'], item['comments']), ('', ''))
+
     def test_a_beekeeper_cannot_record_a_hornet(self):
         request = self.factory.post('/hornets/', {'latitude': 50.5, 'longitude': 4.5, 'direction': 90})
         force_authenticate(request, user=FakeTrapUser(['beekeeper'], uuid_module.uuid4()))
