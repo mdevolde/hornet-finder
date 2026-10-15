@@ -360,8 +360,20 @@ async function walk(name) {
     await shot('trap-locate-back', 1500);
   });
 
-  await step('nests-map', async () => {
+  // The nest manager: what waits for an action ("À traiter"), then the season's list
+  await step('nests-todo', async () => {
     await open('/nests');
+    await shot('nests-todo', 2000);
+  });
+
+  await step('nests-list', async () => {
+    await open('/nests/list');
+    await shot('nests-list', 2000);
+  });
+
+  // The markers and the add button live on the map page, no longer on /nests
+  await step('nests-map', async () => {
+    await open('/map');
     await shot('nests-map', 2500);
   });
 
@@ -374,6 +386,11 @@ async function walk(name) {
   });
 
   await step('hornet-sheet', async () => {
+    // The overview hides the hornet sightings: switch them on from the layers sheet
+    await tap(page.locator('[aria-label="Couches"]'));
+    if (!(await page.locator('#layer-hornets').isChecked())) await tap(page.locator('label[for="layer-hornets"]'));
+    await escape();
+    await page.waitForTimeout(1500);
     await tapAt(...(await markerAt('.hornet-icon')));
     await shot('hornet-sheet', 1500);
     await scrollDown();
