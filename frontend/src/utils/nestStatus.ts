@@ -1,4 +1,4 @@
-import type { NestActor, NestEvent, NestMeans, NestOutcome, NestStatus, NestType } from '../store/store';
+import type { NestActor, NestBasis, NestEvent, NestMeans, NestOutcome, NestStatus, NestType } from '../store/store';
 
 /**
  * How the nests module reads: statuses, the classes of a nest, the entries
@@ -69,6 +69,13 @@ export const VISIT_OUTCOMES: { value: Exclude<NestOutcome, '' | 'unknown'>; labe
   { value: 'not_found', label: 'Introuvable' },
 ];
 
+/** What a verification relies on: there is not always someone on the spot */
+export const BASES: { value: NestBasis; label: string }[] = [
+  { value: 'photos', label: 'Photos' },
+  { value: 'call', label: 'Échange avec le signaleur' },
+  { value: 'on_site', label: 'Sur place' },
+];
+
 export const ACTORS: { value: NestActor; label: string }[] = [
   { value: 'fixmystreet', label: 'FixMyStreet' },
   { value: 'company', label: 'Entreprise privée' },
@@ -91,7 +98,7 @@ export function nestEventTitle(event: NestEvent): { icon: string; title: string 
     case 'report':
       return { icon: '🏴', title: event.outcome === 'empty' ? 'Signalement : nid vide' : 'Signalement' };
     case 'visit':
-      return { icon: '🔍', title: `Visite : ${labelOf(VISIT_OUTCOMES, event.outcome).toLowerCase() || 'sans résultat'}` };
+      return { icon: '🔍', title: `Vérification : ${labelOf(VISIT_OUTCOMES, event.outcome).toLowerCase() || 'sans résultat'}` };
     case 'destruction':
       return { icon: '✅', title: 'Destruction' };
     case 'season_end':
@@ -107,7 +114,8 @@ export function nestEventTitle(event: NestEvent): { icon: string; title: string 
 export function nestEventDetails(event: NestEvent): string[] {
   const parts: string[] = [];
   if (event.kind === 'visit') {
-    const { nest_type: type, height_class: height, size_class: size } = event.details;
+    const { nest_type: type, height_class: height, size_class: size, basis } = event.details;
+    if (basis?.length) parts.push(`sur base de : ${basis.map((item) => labelOf(BASES, item).toLowerCase()).join(', ')}`);
     if (type) parts.push(nestTypeLabel(type).toLowerCase());
     if (height) parts.push(`hauteur ${heightLabel(height)}`);
     if (size) parts.push(`taille ${sizeLabel(size)}`);

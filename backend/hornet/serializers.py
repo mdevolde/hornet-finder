@@ -124,11 +124,12 @@ class NestEventSerializer(serializers.ModelSerializer):
 
 
 class NestEventInputSerializer(serializers.Serializer):
-    """What a visit, a destruction or a reactivation carries (POST /nests/<id>/events/)."""
+    """What a verification (`visit`), a destruction or a reactivation carries (POST /nests/<id>/events/)."""
     kind = serializers.ChoiceField(choices=[NestEvent.KIND_VISIT, NestEvent.KIND_DESTRUCTION,
                                             NestEvent.KIND_REACTIVATION])
     performed_at = serializers.DateTimeField(required=False)
     outcome = serializers.ChoiceField(choices=NestEvent.VISIT_OUTCOMES, required=False)
+    basis = serializers.ListField(child=serializers.ChoiceField(choices=NestEvent.BASES), required=False)
     nest_type = serializers.ChoiceField(choices=Nest.TYPE_CHOICES, required=False, allow_blank=True)
     height_class = serializers.ChoiceField(choices=Nest.HEIGHT_CHOICES, required=False, allow_blank=True)
     size_class = serializers.ChoiceField(choices=Nest.SIZE_CHOICES, required=False, allow_blank=True)
@@ -145,10 +146,12 @@ class NestEventInputSerializer(serializers.Serializer):
     def validate(self, attrs):
         kind = attrs['kind']
         if kind == NestEvent.KIND_VISIT and not attrs.get('outcome'):
-            raise serializers.ValidationError({'outcome': "Le résultat de la visite est requis."})
+            raise serializers.ValidationError({'outcome': "Le résultat de la vérification est requis."})
         if kind != NestEvent.KIND_VISIT:
-            for field in ('outcome', 'nest_type', 'height_class', 'size_class'):
+            for field in ('outcome', 'basis', 'nest_type', 'height_class', 'size_class'):
                 attrs.pop(field, None)
+        else:
+            attrs['basis'] = sorted(set(attrs.get('basis') or []))
         if kind != NestEvent.KIND_DESTRUCTION:
             for field in ('actor', 'fixmystreet_ref', 'means'):
                 attrs.pop(field, None)

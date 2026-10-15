@@ -17,8 +17,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   for the coordinators, active nests within 1 km of one's apiaries, one's own reports still
   open) and lists the nests of the season in "Nids" (search, statuses, ordering); a trapper
   sees their reports and how they stand. The map opens from the header, or on one nest.
-- Nest visit (coordinators: platform admins and `/hunters/admin`): active, empty, another
-  species or not found, with the type (pre-chosen from the date: primary from February to
+- Nest verification (coordinators: platform admins and `/hunters/admin`), on the spot or
+  not: from the photos, a call with the reporter or a look on the spot, noted as "Sur base
+  de". Outcome active, empty, another species or not found, with the type (pre-chosen from the date: primary from February to
   May, secondary from July), height and size by classes. Destruction recorded by a
   coordinator (date, by whom, FixMyStreet included, means: pole, lift, nest removed) or
   declared by whoever reported the nest ("Détruit ?"). The reporter can also say a nest is

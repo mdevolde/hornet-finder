@@ -188,7 +188,7 @@ export default function NestInfoPopup({ show, onHide, nest, onAddAtLocation, onL
           >
             {mayVisit && (
               <Button variant={current.status === 'reported' ? 'primary' : 'outline-primary'} onClick={() => setSub({ kind: 'visit' })}>
-                <span className="me-1" aria-hidden="true">🔍</span>Visite
+                <span className="me-1" aria-hidden="true">🔍</span>Vérifier
               </Button>
             )}
             {mayDestroy && (
@@ -234,7 +234,7 @@ export default function NestInfoPopup({ show, onHide, nest, onAddAtLocation, onL
         onHide={closeSub}
         onConfirm={() => void handleReactivate()}
         title={`Réactiver le nid #${id} ?`}
-        message="Il redevient « Signalé » et attend une nouvelle visite."
+        message="Il redevient « Signalé » et attend une nouvelle vérification."
         confirmLabel="Réactiver"
         confirmIcon="arrow-counterclockwise"
         variant="primary"

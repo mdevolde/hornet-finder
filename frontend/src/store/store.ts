@@ -18,7 +18,7 @@ export { fetchNests, fetchNestsDestroyedPublic, createNest, updateNest, addNestP
 export { selectNests, selectNestById, selectNestsLoading, selectNestsError, selectShowNests, selectShowArchivedNests } from './slices/nestsSlice';
 export type {
   Nest, NestPhoto, NestPermissions, NestUpdateValues, NestStatus, NestEvent, NestEventKind, NestEventValues,
-  NestOutcome, NestType, NestActor, NestMeans,
+  NestOutcome, NestType, NestActor, NestMeans, NestBasis,
 } from './slices/nestsSlice';
 
 // Export des actions et thunks du slice traps

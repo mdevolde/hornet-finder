@@ -170,7 +170,7 @@ export default function Nests() {
   // The main action of a row: what the nest waits for, if the user may do it
   const rowAction = (nest: Nest) => {
     if (nest.permissions?.visit && nest.status === 'reported') {
-      return { label: 'Visite', onClick: (item: Nest) => record(item, 'visit') };
+      return { label: 'Vérifier', onClick: (item: Nest) => record(item, 'visit') };
     }
     if (nest.permissions?.destroy && isOpenStatus(nest.status)) {
       return { label: nest.permissions.visit ? 'Détruit' : 'Détruit ?', onClick: (item: Nest) => record(item, 'destruction') };
@@ -269,7 +269,7 @@ export default function Nests() {
                     <span className="d-inline-flex align-items-center">
                       Rien à traiter.
                       <HelpTip id="nests-todo-empty-help" doc="nests#module" title="À traiter">
-                        Un nid apparaît ici quand il attend quelque chose de vous : une visite ou sa destruction
+                        Un nid apparaît ici quand il attend quelque chose de vous : une vérification ou sa destruction
                         (coordinateurs), parce qu&apos;il est à moins de 1 km d&apos;un de vos ruchers, ou parce que vous
                         l&apos;avez signalé et qu&apos;il n&apos;est pas encore détruit.
                       </HelpTip>

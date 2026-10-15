@@ -7,7 +7,7 @@ Notifications about nests, sent by the scheduler service.
   `NEARBY_APIARY_RADIUS_M` and the administrators of the associations those
   apiaries are shared with ("Nids près de mes ruchers"). An empty nest only
   tells the coordinators.
-* A visit or a destruction tells whoever reported the nest ("Suivi de mes
+* A verification or a destruction tells whoever reported the nest ("Suivi de mes
   signalements"), unless they recorded it themselves.
 
 Each person gets one notification per event, the most telling one (their own
