@@ -115,8 +115,10 @@ export default function PrivacyPolicy() {
               obligations légales et réglementaires applicables.
             </p>
             <p>
-              Les données de signalement peuvent être conservées plus longtemps à des fins 
-              statistiques et de recherche scientifique, après anonymisation.
+              Les observations de frelons et les nids sont conservés pour suivre les saisons. Une 
+              fois archivés par les administrateurs, ils sont supprimés définitivement{' '}
+              <strong>cinq ans</strong> après leur signalement, avec les photos et le journal 
+              d'un nid. Les observations et nids non archivés restent tant qu'ils ne le sont pas.
             </p>
             <p>Le journal des actions est conservé un an (article 8).</p>
             <p>

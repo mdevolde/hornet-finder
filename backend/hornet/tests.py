@@ -37,6 +37,27 @@ def _make_nest(year, archived=False, **kwargs):
     return Nest.objects.get(pk=nest.pk)
 
 
+class ObservationsRetentionTests(TestCase):
+    def _aged(self, model, years, archived):
+        obj = _make_hornet(timezone.now().year) if model is Hornet else _make_nest(timezone.now().year)
+        model.objects.filter(pk=obj.pk).update(
+            created_at=timezone.now() - timedelta(days=365 * years + 5), archived=archived)
+        return obj.pk
+
+    def test_only_archived_observations_past_five_years_are_deleted(self):
+        from . import retention
+        old_hornet, old_nest = self._aged(Hornet, 5, True), self._aged(Nest, 5, True)
+        young_hornet, young_nest = self._aged(Hornet, 4, True), self._aged(Nest, 4, True)
+        open_hornet, open_nest = self._aged(Hornet, 6, False), self._aged(Nest, 6, False)
+        self.assertEqual(retention.purge_archived(dry_run=True), {'hornets': 1, 'nests': 1})
+        self.assertTrue(Hornet.objects.filter(pk=old_hornet).exists())
+        self.assertEqual(retention.purge_archived(), {'hornets': 1, 'nests': 1})
+        self.assertFalse(Hornet.objects.filter(pk=old_hornet).exists())
+        self.assertFalse(Nest.objects.filter(pk=old_nest).exists())
+        for model, pk in ((Hornet, young_hornet), (Nest, young_nest), (Hornet, open_hornet), (Nest, open_nest)):
+            self.assertTrue(model.objects.filter(pk=pk).exists())
+
+
 class HornetArchiveFilterTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()

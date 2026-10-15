@@ -4,7 +4,7 @@ import time
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError, connection
 
-from hornet import nest_alerts, nest_season, push, reminders
+from hornet import nest_alerts, nest_season, push, reminders, retention
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = ("Run the periodic jobs forever (the scheduler service of the compose files): the trap "
             "reminders, the notifications about nests, the end of the nest season and the retention "
-            "of the notifications, every --every seconds.")
+            "of the notifications and of the archived observations, every --every seconds.")
 
     def add_arguments(self, parser):
         parser.add_argument('--every', type=int, default=600, help="Seconds between two passes (600)")
@@ -23,7 +23,8 @@ class Command(BaseCommand):
         while True:
             # Each job on its own: one failing does not hold back the others
             for name, job in (('reminders', self.send_reminders), ('nest season', nest_season.run),
-                              ('nest alerts', self.send_nest_alerts), ('push retention', push.purge_expired)):
+                              ('nest alerts', self.send_nest_alerts), ('push retention', push.purge_expired),
+                              ('observations retention', retention.purge_archived)):
                 try:
                     job()
                 except DatabaseError as exc:

@@ -91,6 +91,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   address, otherwise at the GPS position), instead of the map centre or the GPS.
 
 ### Security
+- Archived hornet sightings and nests are deleted for good 5 years after they were reported
+  (`OBSERVATIONS_RETENTION_DAYS`, run by the scheduler, `manage.py purge_observations --dry-run`
+  to preview); a nest takes its journal and photos with it. The privacy policy says so.
 - The list of hornet sightings no longer shows who reported them to anonymous visitors nor to
   trappers (personal data, GDPR); nest hunters, beekeepers and admins still see the author.
 - The public list of destroyed nests no longer carries the address and comments of a nest on

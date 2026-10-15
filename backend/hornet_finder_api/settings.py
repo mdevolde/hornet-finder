@@ -293,3 +293,5 @@ PUSH_SYNC = False
 # and the devices on which the app was not opened for that long (about six months)
 PUSH_HISTORY_DAYS = int(os.environ.get('PUSH_HISTORY_DAYS') or 90)
 PUSH_DEVICE_IDLE_DAYS = int(os.environ.get('PUSH_DEVICE_IDLE_DAYS') or 183)
+# Retention (scheduler): archived hornets and nests are deleted this long after they were reported (5 years)
+OBSERVATIONS_RETENTION_DAYS = int(os.environ.get('OBSERVATIONS_RETENTION_DAYS') or 1826)
