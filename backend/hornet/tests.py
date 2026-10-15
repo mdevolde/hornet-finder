@@ -3297,7 +3297,7 @@ class NestManagementTests(TestCase):
                               self.coordinator_user)
         self.assertEqual(response.data[0]['permissions'], {
             'update': True, 'photos': True, 'reactivate': False, 'delete': False,
-            'nearby_apiaries': True,
+            'nearby_apiaries': True, 'visit': True, 'destroy': True,
         })
         response = self._call('get', '/nests/?lat=50.5&lon=4.5&radius=5', {'get': 'list'},
                               self.hunter_user)

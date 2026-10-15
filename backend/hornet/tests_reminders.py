@@ -205,7 +205,10 @@ class PreferencesTests(ReminderTestCase):
 
     def test_everything_is_on_by_default_and_only_what_is_off_is_stored(self):
         kinds_on = {k['id']: k['enabled'] for k in self._call_prefs('get', self.owner_user).data['kinds']}
-        self.assertEqual(kinds_on, {k: True for k in kinds.KINDS})
+        # Only "Tous les nouveaux nids" waits for a beekeeper's explicit choice
+        always_on = (kinds.TRAP_READING, kinds.TRAP_REFILL, kinds.GROUP_MESSAGE, kinds.PLATFORM_MESSAGE,
+                     kinds.NEST_FOLLOWUP)
+        self.assertEqual({k: kinds_on[k] for k in always_on}, {k: True for k in always_on})
         self._call_prefs('put', self.owner_user, {kinds.PLATFORM_MESSAGE: False})
         self._call_prefs('put', self.owner_user, {kinds.TRAP_READING: False})
         self._call_prefs('put', self.owner_user, {kinds.TRAP_READING: True})

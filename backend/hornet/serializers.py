@@ -10,7 +10,7 @@ from .afsca import AFSCA_DIGITS, AFSCA_FORMAT, normalize_afsca
 from . import nest_permissions as nest_perms
 from .trap_permissions import is_publicly_visible
 from .models import (
-    Apiary, Hornet, Nest, NestPhoto, Species, Trap, TrapEvent, TrapPhoto, TrapType, User,
+    Apiary, Hornet, Nest, NestEvent, NestPhoto, Species, Trap, TrapEvent, TrapPhoto, TrapType, User,
     HORNET_SPECIES_SLUG, unique_slug,
 )
 from hornet_finder_api.utils import user_exists, get_user_display_name
@@ -103,14 +103,74 @@ class NestPhotoSerializer(serializers.ModelSerializer):
 DESTROYED_AT_CLOCK_SKEW = timedelta(minutes=5)
 
 
-class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
+class NestEventSerializer(serializers.ModelSerializer):
+    """An entry of the journal of a nest, as shown on its sheet."""
     photos = NestPhotoSerializer(many=True, read_only=True)
 
     class Meta:
+        model = NestEvent
+        fields = ['id', 'kind', 'performed_at', 'performed_by', 'outcome', 'actor', 'fixmystreet_ref',
+                  'means', 'details', 'comments', 'photos']
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        # Who did what is for those who see every nest; a reporter sees what happened to theirs
+        named = request is not None and nest_perms.sees_all_nests(request)
+        data['performed_by'] = user_summary(instance.performed_by) if named else None
+        data['can_delete'] = request is not None and nest_perms.can_delete_event(request, instance)
+        return data
+
+
+class NestEventInputSerializer(serializers.Serializer):
+    """What a visit, a destruction or a reactivation carries (POST /nests/<id>/events/)."""
+    kind = serializers.ChoiceField(choices=[NestEvent.KIND_VISIT, NestEvent.KIND_DESTRUCTION,
+                                            NestEvent.KIND_REACTIVATION])
+    performed_at = serializers.DateTimeField(required=False)
+    outcome = serializers.ChoiceField(choices=NestEvent.VISIT_OUTCOMES, required=False)
+    nest_type = serializers.ChoiceField(choices=Nest.TYPE_CHOICES, required=False, allow_blank=True)
+    height_class = serializers.ChoiceField(choices=Nest.HEIGHT_CHOICES, required=False, allow_blank=True)
+    size_class = serializers.ChoiceField(choices=Nest.SIZE_CHOICES, required=False, allow_blank=True)
+    actor = serializers.ChoiceField(choices=NestEvent.ACTOR_CHOICES, required=False)
+    fixmystreet_ref = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    means = serializers.ListField(child=serializers.ChoiceField(choices=NestEvent.MEANS), required=False)
+    comments = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+
+    def validate_performed_at(self, value):
+        if value > timezone.now() + DESTROYED_AT_CLOCK_SKEW:
+            raise serializers.ValidationError("La date ne peut pas être dans le futur.")
+        return value
+
+    def validate(self, attrs):
+        kind = attrs['kind']
+        if kind == NestEvent.KIND_VISIT and not attrs.get('outcome'):
+            raise serializers.ValidationError({'outcome': "Le résultat de la visite est requis."})
+        if kind != NestEvent.KIND_VISIT:
+            for field in ('outcome', 'nest_type', 'height_class', 'size_class'):
+                attrs.pop(field, None)
+        if kind != NestEvent.KIND_DESTRUCTION:
+            for field in ('actor', 'fixmystreet_ref', 'means'):
+                attrs.pop(field, None)
+        else:
+            attrs.setdefault('actor', 'unknown')
+            attrs['means'] = sorted(set(attrs.get('means') or []))
+        return attrs
+
+
+class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
+    photos = NestPhotoSerializer(many=True, read_only=True)
+    # At the report only: what the reporter saw (an empty nest is recorded as abandoned)
+    state = serializers.ChoiceField(choices=NestEvent.REPORT_STATES, write_only=True, required=False)
+
+    class Meta:
         model = Nest
-        fields = ['id', 'longitude', 'latitude', 'public_place', 'address', 'destroyed', 'destroyed_at', 'created_at', 'created_by', 'comments', 'archived', 'archived_at', 'photos']
-        # The reporter is the requester, set by the view: never a form field
-        read_only_fields = ['id', 'created_at', 'created_by', 'archived', 'archived_at']
+        fields = ['id', 'longitude', 'latitude', 'public_place', 'address', 'status', 'destroyed', 'destroyed_at',
+                  'nest_type', 'height_class', 'size_class', 'created_at', 'created_by', 'comments',
+                  'last_event_at', 'archived', 'archived_at', 'photos', 'state']
+        # The reporter is the requester, set by the view: never a form field. The
+        # status follows the journal (POST /nests/<id>/events/)
+        read_only_fields = ['id', 'status', 'created_at', 'created_by', 'last_event_at', 'archived', 'archived_at']
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -132,7 +192,12 @@ class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
                 'reactivate': nest_perms.can_reactivate_nest(request),
                 'delete': nest_perms.can_delete_nest(request),
                 'nearby_apiaries': nest_perms.can_see_nearby_apiaries(request),
+                'visit': nest_perms.can_visit_nest(request, instance),
+                'destroy': nest_perms.can_record_destruction(request, instance),
             }
+            # The journal comes with one nest, not with a list
+            if self.context.get('with_events'):
+                data['events'] = NestEventSerializer(instance.events.all(), many=True, context=self.context).data
         return data
 
     def validate_address(self, value: str) -> str:

@@ -232,9 +232,8 @@ class PushViewSet(viewsets.GenericViewSet):
                          'muted': len(muted), 'devices': devices}, status=status.HTTP_202_ACCEPTED)
 
     def _preferences(self, user) -> Response:
-        prefs = user.notification_prefs or {}
-        return Response({'kinds': [{'id': kind, 'label': label, 'enabled': prefs.get(kind, True) is not False}
-                                   for kind, label in kinds.KINDS.items()]})
+        return Response({'kinds': [{'id': kind, 'label': label, 'enabled': kinds.wants(user, kind)}
+                                   for kind, label in kinds.KINDS.items() if kinds.concerns(user, kind)]})
 
     @extend_schema(responses={200: None})
     @action(detail=False, methods=['get'])
@@ -249,15 +248,11 @@ class PushViewSet(viewsets.GenericViewSet):
         user = _requester(request)
         if not isinstance(request.data, dict):
             raise ValidationError({'detail': "Objet attendu."})
-        prefs = dict(user.notification_prefs or {})
         for kind, enabled in request.data.items():
             if kind not in kinds.KINDS or not isinstance(enabled, bool):
                 raise ValidationError({kind: "Sorte de notification inconnue, ou valeur non booléenne."})
-            if enabled:
-                prefs.pop(kind, None)  # on is the default: only what is off is stored
-            else:
-                prefs[kind] = False
-        user.notification_prefs = prefs
+        for kind, enabled in request.data.items():
+            kinds.choose(user, kind, enabled)  # only what differs from the default is stored
         user.save(update_fields=['notification_prefs'])
         return self._preferences(user)
 

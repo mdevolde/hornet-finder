@@ -44,8 +44,8 @@ class User(models.Model):
     # Profile photo uploaded in the app. Its public URL is also written to the
     # Keycloak `picture` attribute, so the account console and the tokens show it.
     avatar = models.ImageField(upload_to=avatar_upload_path, null=True, blank=True)
-    # Notification kinds the user turned off, `{kind: false}`; a kind absent is
-    # on (see hornet/notification_kinds.py)
+    # Notification kinds the user turned on or off against their default,
+    # `{kind: bool}`; a kind absent follows its default (see hornet/notification_kinds.py)
     notification_prefs = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
@@ -96,18 +96,81 @@ class Hornet(GeolocatedModel):
     archived_at = models.DateTimeField(null=True, blank=True)
 
 class Nest(GeolocatedModel):
+    """
+    A nest of Asian hornets, for one season: a nest is never reoccupied.
+
+    Its status is the outcome of its journal (`NestEvent`, see
+    `recompute_status`): reported, confirmed by a visit, destroyed, rejected
+    (another species, or not found) or abandoned (found empty, or left
+    untreated past the winter). `destroyed` and `destroyed_at` follow the
+    status, for the public map, the statistics and the clients that know
+    nothing else.
+    """
+
+    STATUS_REPORTED = 'reported'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_DESTROYED = 'destroyed'
+    STATUS_REJECTED = 'rejected'
+    STATUS_ABANDONED = 'abandoned'
+    STATUS_CHOICES = [
+        (STATUS_REPORTED, 'Reported'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_DESTROYED, 'Destroyed'),
+        (STATUS_REJECTED, 'Rejected'),
+        (STATUS_ABANDONED, 'Abandoned'),
+    ]
+    # Still waiting for something: a visit or a destruction
+    OPEN_STATUSES = (STATUS_REPORTED, STATUS_CONFIRMED)
+
+    TYPE_PRIMARY = 'primary'
+    TYPE_SECONDARY = 'secondary'
+    TYPE_CHOICES = [(TYPE_PRIMARY, 'Primary'), (TYPE_SECONDARY, 'Secondary')]
+    # Estimated from the ground: classes, not measures
+    HEIGHT_CHOICES = [('0-2', '< 2 m'), ('2-5', '2-5 m'), ('5-10', '5-10 m'), ('10-20', '10-20 m'),
+                      ('20+', '> 20 m')]
+    SIZE_CHOICES = [('0-10', '< 10 cm'), ('10-30', '10-30 cm'), ('30-50', '30-50 cm'), ('50+', '> 50 cm')]
+
     id = models.AutoField(primary_key=True)
     public_place = models.BooleanField(default=False)
     address = models.CharField(max_length=255, blank=True, default='')  # Allow empty address
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_REPORTED, db_index=True)
     destroyed = models.BooleanField(default=False)
-    # When the nest was neutralised: set by the server when `destroyed` turns
-    # true, or given by whoever records it later. Only an admin turns it back.
+    # When the nest was neutralised: the date of its destruction event
     destroyed_at = models.DateTimeField(null=True, blank=True)
+    nest_type = models.CharField(max_length=16, choices=TYPE_CHOICES, blank=True, default='')
+    height_class = models.CharField(max_length=8, choices=HEIGHT_CHOICES, blank=True, default='')
+    size_class = models.CharField(max_length=8, choices=SIZE_CHOICES, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('User', null=True, blank=True, on_delete=models.SET_NULL)
     comments = models.TextField(null=True, blank=True)
+    # Time of the latest event of the journal
+    last_event_at = models.DateTimeField(null=True, blank=True)
     archived = models.BooleanField(default=False)
     archived_at = models.DateTimeField(null=True, blank=True)
+
+    def recompute_status(self, save=True):
+        """
+        Derive the status from the journal, oldest event first: each event
+        that tells something about the nest sets it. Only the first report
+        counts (a later one is someone else reporting the same nest).
+        """
+        status, destroyed_at, last = None, None, None
+        for event in self.events.order_by('performed_at', 'id'):
+            last = event.performed_at
+            outcome = NestEvent.STATUS_OF.get((event.kind, event.outcome)) or NestEvent.STATUS_OF.get(
+                (event.kind, None))
+            if event.kind == NestEvent.KIND_REPORT and status is not None:
+                continue
+            if outcome:
+                status = outcome
+                destroyed_at = (event.performed_at if outcome == self.STATUS_DESTROYED
+                                and not event.details.get('date_unknown') else None)
+        self.status = status or self.STATUS_REPORTED
+        self.destroyed = self.status == self.STATUS_DESTROYED
+        self.destroyed_at = destroyed_at if self.destroyed else None
+        self.last_event_at = last
+        if save:
+            self.save(update_fields=['status', 'destroyed', 'destroyed_at', 'last_event_at'])
 
 
 def nest_photo_path(instance, filename):
@@ -116,11 +179,107 @@ def nest_photo_path(instance, filename):
     return f"nests/{instance.nest_id}/{uuid.uuid4().hex}.jpg"
 
 
+class NestEvent(models.Model):
+    """
+    One entry of the journal of a nest: its report, a visit, its destruction,
+    the end of its season. The status of the nest follows (`Nest.recompute_status`).
+
+    `alerted_at` is when the notifications this event calls for were sent (see
+    hornet/nest_alerts.py); NULL while they are pending, set at creation for
+    the events that notify nobody.
+    """
+
+    KIND_REPORT = 'report'
+    KIND_VISIT = 'visit'
+    KIND_DESTRUCTION = 'destruction'
+    KIND_SEASON_END = 'season_end'
+    KIND_REACTIVATION = 'reactivation'
+    KIND_CHOICES = [
+        (KIND_REPORT, 'Report'),
+        (KIND_VISIT, 'Visit'),
+        (KIND_DESTRUCTION, 'Destruction'),
+        (KIND_SEASON_END, 'End of the season'),
+        (KIND_REACTIVATION, 'Reactivation'),
+    ]
+
+    # Outcome of a visit, or state of the nest at its report
+    OUTCOME_ACTIVE = 'active'
+    OUTCOME_EMPTY = 'empty'
+    OUTCOME_OTHER_SPECIES = 'other_species'
+    OUTCOME_NOT_FOUND = 'not_found'
+    OUTCOME_UNKNOWN = 'unknown'
+    VISIT_OUTCOMES = (OUTCOME_ACTIVE, OUTCOME_EMPTY, OUTCOME_OTHER_SPECIES, OUTCOME_NOT_FOUND)
+    REPORT_STATES = (OUTCOME_ACTIVE, OUTCOME_EMPTY, OUTCOME_UNKNOWN)
+
+    # Who destroyed the nest. FixMyStreet: the destroyers the Walloon Region
+    # trains, subsidises and assigns to zones, reached through its platform
+    ACTOR_CHOICES = [
+        ('fixmystreet', 'FixMyStreet'),
+        ('company', 'Private company'),
+        ('firefighters', 'Firefighters'),
+        ('municipality', 'Municipality'),
+        ('other', 'Other'),
+        ('unknown', 'Unknown'),
+    ]
+    # How the nest was reached or dealt with; several at once (no product is tracked)
+    MEANS = ('pole', 'lift', 'removed', 'other')
+
+    # (kind, outcome) -> status of the nest; (kind, None) for any outcome
+    STATUS_OF = {
+        (KIND_REPORT, OUTCOME_EMPTY): Nest.STATUS_ABANDONED,
+        (KIND_REPORT, None): Nest.STATUS_REPORTED,
+        (KIND_VISIT, OUTCOME_ACTIVE): Nest.STATUS_CONFIRMED,
+        (KIND_VISIT, OUTCOME_EMPTY): Nest.STATUS_ABANDONED,
+        (KIND_VISIT, OUTCOME_OTHER_SPECIES): Nest.STATUS_REJECTED,
+        (KIND_VISIT, OUTCOME_NOT_FOUND): Nest.STATUS_REJECTED,
+        (KIND_DESTRUCTION, None): Nest.STATUS_DESTROYED,
+        (KIND_SEASON_END, None): Nest.STATUS_ABANDONED,
+        (KIND_REACTIVATION, None): Nest.STATUS_REPORTED,
+    }
+
+    id = models.AutoField(primary_key=True)
+    nest = models.ForeignKey(Nest, on_delete=models.CASCADE, related_name='events')
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    performed_at = models.DateTimeField()
+    performed_by = models.ForeignKey('User', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='nest_events')
+    outcome = models.CharField(max_length=16, blank=True, default='')
+    actor = models.CharField(max_length=16, choices=ACTOR_CHOICES, blank=True, default='')
+    fixmystreet_ref = models.CharField(max_length=32, blank=True, default='')
+    means = models.JSONField(default=list, blank=True)
+    # What a visit noted about the nest (type, height, size), as it was then
+    details = models.JSONField(default=dict, blank=True)
+    comments = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    alerted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        ordering = ['-performed_at', '-id']
+
+    def __str__(self):
+        return f"{self.kind} on nest {self.nest_id}"
+
+
+class NestAlert(models.Model):
+    """Who was notified of a nest event, and how: one notification per event and person."""
+
+    event = models.ForeignKey(NestEvent, on_delete=models.CASCADE, related_name='alerts')
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='nest_alerts')
+    kind = models.CharField(max_length=32)
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['event', 'user'], name='nestalert_once')]
+
+
 class NestPhoto(models.Model):
     """A photo of a nest, taken when it is reported or added later."""
 
     id = models.AutoField(primary_key=True)
     nest = models.ForeignKey(Nest, on_delete=models.CASCADE, related_name='photos')
+    # The visit or destruction the photo was taken at; NULL for the report or added later
+    event = models.ForeignKey(NestEvent, null=True, blank=True, on_delete=models.SET_NULL,
+                              related_name='photos')
     image = models.ImageField(upload_to=nest_photo_path)
     thumbnail = models.ImageField(upload_to=nest_photo_path, null=True, blank=True)
     uploaded_by = models.ForeignKey('User', null=True, blank=True, on_delete=models.SET_NULL,
