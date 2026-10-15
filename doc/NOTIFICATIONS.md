@@ -52,9 +52,24 @@ Les propriétaires de pièges reçoivent un rappel quand un relevé ou le renouv
 - **Clic** : la notification ouvre `/traps/due?trap=<id>` (ou `/traps/due` pour un récapitulatif) ; si l'application est déjà ouverte, le service worker la ramène au premier plan et la fait naviguer sans la recharger.
 - **Qui est compté** : seulement les propriétaires qui ont un appareil abonné et la sorte de rappel activée ; quelqu'un qui s'abonne plus tard reçoit ce qui est dû à ce moment-là. Les rappels ne sont pas inscrits au journal d'audit (action du système, répétée chaque jour).
 
+## Notifications des nids
+
+Code : `backend/hornet/nest_alerts.py` (envoi), `backend/hornet/nest_season.py` (fin de saison) ; écran : module *Nids*.
+
+- **Nouveau nid** (sorte « Tous les nouveaux nids ») : aux coordinateurs (administrateurs de la plateforme, `/hunters/admin`), activé d'office pour eux ; aux apiculteurs qui l'ont activé (coupé par défaut, choix explicite). Un nid signalé vide ne prévient que les coordinateurs.
+- **Nid près de mes ruchers** : aux propriétaires des ruchers à moins de 1 km (`NEARBY_APIARY_RADIUS_M`) et aux administrateurs des associations avec lesquelles l'un de ces ruchers est partagé (`ApiaryGroupPermission`, lecture). Seulement pour un nid actif.
+- **Suivi de mes signalements** : à qui a signalé le nid, quand une visite le confirme, l'écarte ou le trouve vide, et quand sa destruction est enregistrée ; rien quand c'est cette personne qui l'enregistre.
+- **Une notification par événement et par personne**, la plus parlante (son propre rucher, puis celui de son association, puis « nouveau nid ») ; jamais sur sa propre action. `NestAlert` garde qui a reçu quoi, `NestEvent.alerted_at` marque l'événement traité.
+- **Heure** : la fenêtre des rappels de pièges, de 9 h (10 h le dimanche) à 20 h, heure de Bruxelles. Un nid signalé dans la fenêtre part au passage suivant (10 minutes au plus) ; hors fenêtre, à l'ouverture suivante. Un événement resté 48 h sans envoi (service arrêté) est abandonné.
+- **Regroupement** : à partir de 3 nouveaux nids pour une même personne dans un passage, un seul récapitulatif.
+- **Texte** : le numéro du nid et la commune (code postal à 4 chiffres et localité lus dans l'adresse), lieu public ou privé, nombre de photos. Jamais l'adresse complète ni un nom : le texte se lit sur l'écran verrouillé. Toucher ouvre `/nests?nest=<id>`.
+- Seules les personnes qui ont un appareil abonné sont comptées ; les envois ne vont pas au journal d'audit (action du système).
+- **Fin de saison** : le 1<sup>er</sup> mars, les nids de la saison précédente encore signalés ou confirmés passent abandonnés (une entrée « Fin de saison » au journal, un événement `nest.season_ended` au journal d'audit), sans notification.
+- `docker compose exec <service api> python manage.py send_nest_alerts --dry-run` affiche ce qui partirait (`--now 2026-10-20T09:05` pour simuler une heure).
+
 ### Le service planifié
 
-Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hornet-finder-scheduler`) est l'image de l'API lancée avec `manage.py run_scheduler` au lieu de gunicorn (surcharge de l'`entrypoint`). Toutes les 10 minutes, il fait un passage : envoyer ce qui est dû aujourd'hui et pas encore parti, puis purger l'historique et les appareils inutilisés (voir *Conservation*). Chaque tâche est indépendante : l'échec de l'une n'empêche pas l'autre. Le passage est idempotent et prend un verrou PostgreSQL (`pg_try_advisory_xact_lock`), deux passages simultanés n'envoient donc rien en double. Tant que l'API n'a pas appliqué ses migrations, il réessaie au passage suivant.
+Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hornet-finder-scheduler`) est l'image de l'API lancée avec `manage.py run_scheduler` au lieu de gunicorn (surcharge de l'`entrypoint`). Toutes les 10 minutes, il fait un passage : envoyer les rappels dus aujourd'hui et pas encore partis, marquer abandonnés les nids dont la saison est finie, envoyer les notifications des nids en attente, puis purger l'historique et les appareils inutilisés (voir *Conservation*). Chaque tâche est indépendante : l'échec de l'une n'empêche pas l'autre. Le passage est idempotent et prend un verrou PostgreSQL (`pg_try_advisory_xact_lock`), deux passages simultanés n'envoient donc rien en double. Tant que l'API n'a pas appliqué ses migrations, il réessaie au passage suivant.
 
 - `./deploy.sh -s scheduler` le redémarre seul ; `./logs.sh scheduler` montre ses passages.
 - `docker compose exec <service api> python manage.py send_trap_reminders --dry-run` affiche ce qui partirait maintenant, sans rien envoyer (`--now 2026-10-20T09:05` pour simuler une heure).
@@ -64,7 +79,7 @@ Le service `scheduler` des fichiers compose (`hornet-finder-dev-scheduler`, `hor
 Le module *Notifications* (tuile de l'accueil) réunit :
 
 - **Cet appareil** : l'abonnement de l'appareil (interrupteur) et l'essai. Par appareil.
-- **Me prévenir pour** : rappels de relevé, rappels d'attractif, messages de mon groupe, messages de la plateforme. Par compte, pour tous les appareils ; tout est activé par défaut, seul ce qui est coupé est enregistré (`User.notification_prefs`). Couper des messages d'administrateur demande une confirmation. Un message d'un administrateur de la plateforme est de la sorte « plateforme », celui d'un administrateur de groupe de la sorte « groupe » ; ceux qui l'ont coupée sont comptés à part (`muted`) dans le résultat de l'envoi.
+- **Me prévenir pour** : rappels de relevé, rappels d'attractif, nouveaux nids, nids près de mes ruchers, suivi de mes signalements, messages de mon groupe, messages de la plateforme. Par compte, pour tous les appareils. Chaque sorte n'est proposée qu'aux personnes concernées (`notification_kinds.concerns` : les nouveaux nids aux coordinateurs et aux apiculteurs, les nids près des ruchers aux apiculteurs). Tout est activé par défaut, sauf « Tous les nouveaux nids » pour un apiculteur ; seul ce qui diffère du défaut est enregistré (`User.notification_prefs`, `{sorte: booléen}`). Couper des messages d'administrateur demande une confirmation. Un message d'un administrateur de la plateforme est de la sorte « plateforme », celui d'un administrateur de groupe de la sorte « groupe » ; ceux qui l'ont coupée sont comptés à part (`muted`) dans le résultat de l'envoi.
 - Les interrupteurs ont l'apparence de la plateforme : iOS sur iPhone et iPad, Material ailleurs (`data-platform` sur `<html>`, `components/ui/Switch.tsx`).
 
 ### Première demande

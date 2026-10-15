@@ -29,9 +29,13 @@ A RESTful API built with Django and Django REST Framework for managing hornet de
 - `GET|PUT|PATCH|DELETE /api/hornets/{id}/` - Retrieve, update, or delete a specific hornet
 - `GET|POST /api/nests/` - List all nests (hunters, beekeepers, admins) or report a new nest (every role)
 - `GET /api/nests/my/` - The nests the requester reported, with the filters of the list (what a trapper sees besides the destroyed ones)
-- `GET|POST /api/nests/` also takes `multipart/form-data`: up to 10 `photos` files with the report (resized to 1600 px, plus a 320 px thumbnail). Every nest in the list carries its `photos` (`url`, `thumbnail_url`, private media) and `permissions` (`update`, `photos`, `reactivate`, `delete`, `nearby_apiaries`) for the requester. The reporter (`created_by`) is always the requester, never a field
-- `GET|DELETE /api/nests/{id}/` - Retrieve or delete a nest (platform admins)
-- `PUT|PATCH /api/nests/{id}/` - Update a nest: platform admins and administrators of the nest hunters (`/hunters/admin`). `destroyed_at` is set when `destroyed` turns true (now, unless a date is given, never in the future) and kept afterwards; a destroyed nest turns back to active (`destroyed: false`, date cleared) through a platform admin only, otherwise 400
+- `GET|POST /api/nests/` also takes `multipart/form-data`: up to 10 `photos` files with the report (resized to 1600 px, plus a 320 px thumbnail), `state` (`active`, `empty`: recorded as abandoned, `unknown`) and `height_class`. Every nest in the list carries its `status`, its `photos` (`url`, `thumbnail_url`, private media) and `permissions` (`update`, `photos`, `reactivate`, `delete`, `nearby_apiaries`, `visit`, `destroy`) for the requester. The reporter (`created_by`) is always the requester, never a field
+- `GET /api/nests/{id}/` - One nest with its journal (`events`, newest first), for whoever may read it (every-nest roles and its reporter; the authors of the entries are named only to the former). `DELETE` (platform admins)
+- `POST /api/nests/{id}/events/` - Record a visit (`kind=visit`, `outcome`: `active`, `empty`, `other_species`, `not_found`; `nest_type`, `height_class`, `size_class`; coordinators), a destruction (`kind=destruction`, `performed_at`, `actor`: `fixmystreet`, `company`, `firefighters`, `municipality`, `other`, `unknown`, `fixmystreet_ref`, `means`: `pole`, `lift`, `removed`, `other`, several; coordinators and the reporter, once) or a reactivation (`kind=reactivation`, platform admins, on a destroyed, rejected or abandoned nest), with `comments` and `photos` files. The `status` of the nest (`reported`, `confirmed`, `destroyed`, `rejected`, `abandoned`) follows its journal; `destroyed` and `destroyed_at` follow the status. Returns the nest
+- `DELETE /api/nests/{id}/events/{event_id}/` - Remove an entry (not the report): coordinators, and the author of a destruction they declared; the status is recomputed
+- `GET /api/nests/managed/` - The nests of the season, paginated: `show=all|mine` (a trapper always gets theirs), `status` (comma separated, `open` = reported and confirmed), `q` (number, address, comment), `ordering` (`-created_at`, `created_at`, `-last_event_at`, `last_event_at`)
+- `GET /api/nests/todo/` - What waits for the requester: `to_verify` and `confirmed` (coordinators), `near_apiaries` (active nests within 1 km of the requester's apiaries), `mine` (own reports of the season)
+- `PUT|PATCH /api/nests/{id}/` - Update a nest (place, address, comments, position, `nest_type`, `height_class`, `size_class`): platform admins and administrators of the nest hunters (`/hunters/admin`). Kept for older clients: `destroyed: true` (with `destroyed_at`, never in the future) records a destruction in the journal, `destroyed: false` a reactivation (platform admins only, otherwise 400)
 - `POST /api/nests/{id}/photos/` - Add photos (`photos` files, up to 10), same rights as the update; returns the nest
 - `DELETE /api/nests/{id}/photos/{photo_id}/` - Remove a photo, same rights; returns the nest
 - `GET /api/nests/{id}/nearby-apiaries/` - AFSCA numbers of the apiaries within 1 km of the nest, `["9.005.577.599", …]`, each once, sorted by number; apiaries without a number are left out. No distance and no order by distance: they would locate the apiaries. Same rights as the update (apiaries are private)
@@ -153,7 +157,8 @@ Business actions (reports, edits, deletions, hand-overs, sharings, delegations, 
 - Location (latitude, longitude, PostGIS point)
 - Public/private place indicator
 - Address information
-- Destruction status and date (kept once destroyed; only an admin reactivates)
+- Status from its journal (`NestEvent`: report, visit, destruction, end of season, reactivation): reported, confirmed, destroyed (with its date), rejected, abandoned; only an admin reactivates
+- Type (primary, secondary), estimated height and size, by classes
 - Creation timestamp and author
 - Comments
 - Photos (`NestPhoto`, files under `nests/<nest id>/`, served by the media view to who sees every nest and to the reporter)

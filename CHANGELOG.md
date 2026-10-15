@@ -11,6 +11,26 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ## [Unreleased]
 
 ### Added
+- Nests module, first part of its redesign (`doc/mockups/nests-redesign.html`): a nest has a
+  journal and a status, reported, confirmed, destroyed, rejected (another species, not
+  found) or abandoned (empty). The module opens on "À traiter" (nests to verify or to destroy
+  for the coordinators, active nests within 1 km of one's apiaries, one's own reports still
+  open) and lists the nests of the season in "Nids" (search, statuses, ordering); a trapper
+  sees their reports and how they stand. The map opens from the header, or on one nest.
+- Nest visit (coordinators: platform admins and `/hunters/admin`): active, empty, another
+  species or not found, with the type (pre-chosen from the date: primary from February to
+  May, secondary from July), height and size by classes. Destruction recorded by a
+  coordinator (date, by whom, FixMyStreet included, means: pole, lift, nest removed) or
+  declared by whoever reported the nest ("Détruit ?"). The reporter can also say a nest is
+  empty.
+- Nest notifications, from 9:00 (10:00 on Sundays) to 20:00 like the trap reminders, a
+  summary from 3 at once: "Tous les nouveaux nids" (on for coordinators and admins, a
+  beekeeper turns it on), "Nids près de mes ruchers" (owners of the apiaries within 1 km and
+  administrators of the associations they are shared with), "Suivi de mes signalements"
+  (confirmed, rejected, found empty, destroyed). An empty nest only tells the coordinators.
+- End of the nest season: on 1 March, the nests of the previous season still reported or
+  confirmed become abandoned. Existing nests get their journal at the migration; those of
+  past seasons left untreated become abandoned.
 - Appearance: a dark mode (light, dark, or follow the system, the default) and two themes,
   Velutina (charcoal and amber, the default) and Forêt (green and ochre), chosen from the
   "Apparence" entry of the menu. The choice is kept on the device and applies before the first
@@ -35,6 +55,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   extent of the place found (a house, a street, a village).
 
 ### Changed
+- Nests: the map hides rejected and abandoned nests, and colours the others by status
+  (reported red, confirmed orange, destroyed grey). Editing a nest no longer sets it
+  destroyed: its destruction goes through its journal (the old `destroyed` field of the
+  API still works and is written to the journal).
 - Traps module: the former list is the "Gérer" tab; a trap is highlighted as late after
   the reading delay of its type (7 days when the type sets none).
 - Profile dialog: the notifications row now leads to the Notifications module.
