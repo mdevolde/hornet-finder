@@ -244,7 +244,7 @@
 <header class="prose">
   <h1>Refonte du module Nids</h1>
   <p class="lead">Proposition et maquettes, téléphone d'abord (390 px). Le module reprend ce qui marche dans le module Pièges : une vue de ce qui attend une action, une liste qu'on trie et filtre, une fiche avec un journal, une délégation aux associations d'apiculteurs. Les apiculteurs, les responsables d'associations, les coordinateurs et la personne qui a signalé sont prévenus de ce qui les concerne.</p>
-  <p class="meta">Version 2, 15 octobre 2026, après les remarques sur la version 1 · maquettes statiques ; numéros, noms, communes et dates sont inventés.</p>
+  <p class="meta">Version 3, 15 octobre 2026 : les quatre questions de la version 2 sont tranchées · maquettes statiques ; numéros, noms, communes et dates sont inventés.</p>
   <ul class="toc">
     <li><a href="#v2">Changements</a></li>
     <li><a href="#constat">Aujourd'hui</a></li>
@@ -257,7 +257,7 @@
     <li><a href="#maquettes">Maquettes</a></li>
     <li><a href="#technique">Données et API</a></li>
     <li><a href="#lots">Étapes</a></li>
-    <li><a href="#questions">Questions</a></li>
+    <li><a href="#questions">Décisions</a></li>
   </ul>
   <div class="changes" id="v2">
     <h3>Ce qui change depuis la version 1</h3>
@@ -337,12 +337,12 @@
 
 <section id="droits" class="prose">
   <h2 class="part"><span class="n">05</span>Qui fait quoi</h2>
-  <p>« Coordinateur » : administrateur de la plateforme ou membre de <code>/hunters/admin</code>. En rouge, ce qui est nouveau ; en orange, à confirmer.</p>
+  <p>« Coordinateur » : administrateur de la plateforme ou membre de <code>/hunters/admin</code>. En rouge, ce qui est nouveau.</p>
   <div class="scroll"><table>
     <thead><tr><th>Action</th><th class="c">A signalé le nid</th><th class="c">Membre de l'asso. déléguée</th><th class="c">Admin de l'asso. déléguée</th><th class="c">Coordinateur</th><th class="c">Admin plateforme</th></tr></thead>
     <tbody>
       <tr><td>Signaler un nid, ou rejoindre un signalement existant</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
-      <tr><td>Déclarer la destruction</td><td class="c new">✓</td><td class="c ask">s'il en est chargé ?</td><td class="c new">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Déclarer la destruction</td><td class="c new">✓</td><td class="c new">s'il en est chargé</td><td class="c new">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
       <tr><td>Visite : confirmer, écarter, nid vide</td><td class="c no">–</td><td class="c no">–</td><td class="c new">✓</td><td class="c new">✓</td><td class="c new">✓</td></tr>
       <tr><td>Déléguer à une association</td><td class="c no">–</td><td class="c no">–</td><td class="c no">–</td><td class="c new">✓</td><td class="c new">✓</td></tr>
       <tr><td>Se charger du nid</td><td class="c no">–</td><td class="c new">✓</td><td class="c new">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
@@ -766,12 +766,13 @@
 </div>
 
 <section id="questions" class="prose">
-  <h2 class="part"><span class="n">11</span>Encore à décider</h2>
+  <h2 class="part"><span class="n">11</span>Décisions</h2>
+  <p>Les quatre questions de la version 2, validées le 15 octobre 2026 :</p>
   <ol class="q">
-    <li><div><b>Membre chargé d'un nid</b> : peut-il déclarer la destruction, comme la personne qui a signalé (proposé) ? La visite reste aux coordinateurs et aux administrateurs de l'association.</div></li>
-    <li><div><b>Fenêtre d'envoi</b> : j'ai compris « de 9 h (10 h le dimanche) à 20 h, ce qui arrive la nuit part à l'ouverture », et non un seul envoi par jour à 9 h. Correct ?</div></li>
-    <li><div><b>Abandon après l'hiver</b> : le 1<sup>er</sup> mars convient-il ?</div></li>
-    <li><div><b>Nid vide</b> : prévenir seulement les coordinateurs (proposé), pas les apiculteurs ?</div></li>
+    <li><div><b>Membre chargé d'un nid</b> : il déclare la destruction, comme la personne qui a signalé. La visite reste aux coordinateurs et aux administrateurs de l'association déléguée.</div></li>
+    <li><div><b>Fenêtre d'envoi</b> : de 9 h (10 h le dimanche) à 20 h, heure de Bruxelles. Ce qui arrive la nuit part à l'ouverture ; en journée, au passage suivant (10 minutes au plus).</div></li>
+    <li><div><b>Abandon après l'hiver</b> : le 1<sup>er</sup> mars, réglable.</div></li>
+    <li><div><b>Nid vide</b> : seuls les coordinateurs sont prévenus, pas les apiculteurs.</div></li>
   </ol>
 </section>
 
