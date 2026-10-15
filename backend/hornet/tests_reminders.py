@@ -11,6 +11,7 @@ from rest_framework.test import force_authenticate
 from . import notification_kinds as kinds
 from . import reminders
 from .models import PushNotification, PushSubscription, Trap, TrapEvent, TrapReminder, TrapType, User
+from .pending import pending_view
 from .push_views import PushViewSet
 from .tests import TrapTestCase
 from .trap_views import TrapViewSet
@@ -195,6 +196,16 @@ class DueEndpointTests(ReminderTestCase):
         Trap.objects.filter(pk=self.trap.pk).update(installed_at=timezone.localdate() - timedelta(days=5),
                                                     group=self.group)
         self.assertEqual(self._due(self.member_user).data, [])
+
+    def test_the_traps_badge_counts_what_is_due_today(self):
+        today = timezone.localdate()
+        Trap.objects.filter(pk=self.trap.pk).update(installed_at=today - timedelta(days=5))
+        Trap.objects.create(latitude=50.5, longitude=4.5, owner=self.owner, trap_type=self.trap_type,
+                            installed_at=today - timedelta(days=1))  # due tomorrow: not yet
+        request = self.factory.get('/api/pending/')
+        force_authenticate(request, user=self.owner_user)
+        self.assertEqual(pending_view(request).data['traps'], len(self._due(self.owner_user, '?days=0').data))
+        self.assertEqual(pending_view(request).data['traps'], 1)
 
 
 class PreferencesTests(ReminderTestCase):

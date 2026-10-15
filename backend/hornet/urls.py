@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .media_views import media_view
+from .pending import pending_view
 from .stats.views import (
     StatDetailView, StatEmailLinkView, StatExportLinkView, StatsCatalogueView, stat_export_file,
     stat_export_job, stat_export_job_file,
@@ -36,6 +37,7 @@ router.register(r'me/group-invitations', MyGroupInvitationViewSet, basename='my-
 urlpatterns = [
     path('media/<path:path>', media_view, name='media'),
     path('me/avatar/', my_avatar, name='my-avatar'),
+    path('pending/', pending_view, name='pending'),
     # Before the router, so `sheet` is not read as a tag value
     path('tags/sheet/<str:token>/', sheet_pdf, name='tag-sheet-pdf'),
     path('stats/', StatsCatalogueView.as_view(), name='stats-catalogue'),

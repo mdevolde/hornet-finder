@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from . import nest_permissions as nest_perms
+from . import pending
 from .images import delete_files, store_photo
 from .models import Apiary, Hornet, Nest, NestEvent, NestPhoto, User
 from .stats.periods import PeriodError, resolve_archive_period
@@ -554,19 +555,7 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
     @action(detail=False, methods=['get'])
     def todo(self, request):
         """What the season holds for the requester, by section; the sections that do not concern them are left out."""
-        season = self._season(self.get_queryset())
-        sections = {}
-        if nest_perms.is_nest_manager(request):
-            sections['to_verify'] = season.filter(status=Nest.STATUS_REPORTED).order_by('created_at', 'id')
-            sections['confirmed'] = season.filter(status=Nest.STATUS_CONFIRMED).order_by('last_event_at', 'id')
-        apiaries = Apiary.objects.filter(owner__guid=getattr(request.user, 'guid', None), point__isnull=False)
-        if nest_perms.sees_all_nests(request) and apiaries.exists():
-            near = Q()
-            for apiary in apiaries:
-                near |= Q(point__distance_lte=(apiary.point, D(m=nest_perms.NEARBY_APIARY_RADIUS_M)))
-            sections['near_apiaries'] = (season.filter(status__in=Nest.OPEN_STATUSES).filter(near)
-                                         .order_by('-created_at', '-id'))
-        sections['mine'] = self._mine(season).order_by('-created_at', '-id')
+        sections = pending.nest_todo(request, self._season(self.get_queryset()))
         return Response({name: self.get_serializer(queryset[:TODO_SECTION_MAX], many=True).data
                          for name, queryset in sections.items()})
 
