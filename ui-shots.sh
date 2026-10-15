@@ -15,9 +15,16 @@
 # through the API beforehand so that every sheet can be opened, and deleted
 # on exit, like smoke-traps.sh does.
 #
-# Usage: ./ui-shots.sh [-d <device>]... [-o <out_dir>]
+# Usage: ./ui-shots.sh [-d <device>]... [-s <step>]... [-x <step>]... [-o <out_dir>]
 #   -d  only this device (repeatable): ip14, se, w320, pixel7, galaxy
 #       (default: ip14 pixel7)
+#   -s  only the steps whose label contains this text (repeatable), e.g.
+#       `-s stats` or `-s apiar`; the labels are in the screenshot names and
+#       in the FAIL lines. The sign-in always runs; a step may rely on the page
+#       the previous one left open, so one that FAILs alone needs its
+#       predecessor too
+#   -x  all steps but those whose label contains this text (repeatable), e.g.
+#       `-x stats` skips the longest part of the walk
 #   -o  output directory (default: ui-shots/, ignored by git)
 #
 set -u
@@ -51,11 +58,15 @@ fi
 PW_VERSION=1.63.0
 OUT="ui-shots"
 DEVICES=()
-while getopts "d:o:" opt; do
+ONLY_STEPS=()
+SKIP_STEPS=()
+while getopts "d:s:x:o:" opt; do
     case "$opt" in
         d) DEVICES+=("$OPTARG") ;;
+        s) ONLY_STEPS+=("$OPTARG") ;;
+        x) SKIP_STEPS+=("$OPTARG") ;;
         o) OUT="$OPTARG" ;;
-        *) sed -n '2,17p' "$0"; exit 1 ;;
+        *) sed -n '2,/^set -u/p' "$0" | sed '$d'; exit 1 ;;
     esac
 done
 
@@ -142,7 +153,7 @@ fi
 docker run --rm --ipc=host "${NET_ARGS[@]}" --user "$(id -u):$(id -g)" -e HOME=/tmp \
     -e BASE_URL="https://${HOST}" -e KC_USER="$USER_EMAIL" -e KC_PASS="$KC_TEST_USER_PASSWORD" \
     -e KC_TOTP_SECRET="$KC_TEST_TOTP_SECRET" -e KC_TOTP_USED_STEP="$(( $(date +%s) / 30 ))" \
-    -e LAT="$LAT" -e LNG="$LNG" -e DEVICES="${DEVICES[*]:-}" \
+    -e LAT="$LAT" -e LNG="$LNG" -e DEVICES="${DEVICES[*]:-}" -e STEPS="${ONLY_STEPS[*]:-}" -e SKIP="${SKIP_STEPS[*]:-}" \
     -v "$SCRIPT_DIR/frontend/scripts:/scripts:ro" -v "$SCRIPT_DIR/$OUT:/out" \
     -v "$SCRIPT_DIR/.cache/ui-shots:/work" -w /work \
     "mcr.microsoft.com/playwright:v${PW_VERSION}-noble" \

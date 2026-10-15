@@ -49,6 +49,14 @@ const nextOtp = async () => {
   return String(code).padStart(6, '0');
 };
 
+// Step filter (ui-shots.sh -s / -x): substrings of step labels. The sign-in
+// always runs, the other steps need the page the previous ones left open
+const ONLY = (process.env.STEPS || '').split(/\s+/).filter(Boolean);
+const SKIP = (process.env.SKIP || '').split(/\s+/).filter(Boolean);
+const wanted = (label) => label === 'login'
+  || ((!ONLY.length || ONLY.some((p) => label.includes(p))) && !SKIP.some((p) => label.includes(p)));
+let ranSteps = 0;
+
 let warnings = 0;
 let failures = 0;
 
@@ -125,7 +133,18 @@ async function walk(name) {
     const problems = await overflow();
     problems.forEach((problem) => { warnings += 1; console.log(`WARN ${file}: ${problem}`); });
   };
+  /** Waits for what a page loads to be done (no spinner left), then `floor` ms for the render, instead of a fixed delay */
+  const settled = async (floor = 300) => {
+    await page.locator('.spinner-border:visible').first().waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(floor);
+  };
+  const shotSettled = async (label, floor) => {
+    await settled(floor);
+    await shot(label, 0);
+  };
   const step = async (label, action) => {
+    if (!wanted(label)) return;
+    if (label !== 'login') ranSteps += 1;
     try {
       await action();
     } catch (error) {
@@ -176,6 +195,8 @@ async function walk(name) {
   });
 
   await step('login', async () => {
+    // home-anon opens the home page; without it (step filter) open it here
+    if (!page.url().startsWith(BASE)) await open('/');
     await tap(page.getByText('Se connecter'));
     await page.fill('input[name=username]', process.env.KC_USER);
     // Identifier-first flow: the password comes on a second screen
@@ -480,35 +501,35 @@ async function walk(name) {
   // list and chart view (the export sheet is opened, nothing is emailed)
   await step('stats', async () => {
     await open('/stats');
-    await shot('stats', 1500);
+    await shotSettled('stats', 300);
     await open('/stats/traps-catches');
-    await shot('stats-catches', 2500);
+    await shotSettled('stats-catches', 300);
     await scrollDown();
     await shot('stats-catches-bottom', 400);
     await tap(page.locator('[aria-label="Filtres"]').first());
     await shot('stats-filters', 800);
     await escape();
     await tap(page.locator('[aria-label="Exporter"]').first());
-    await shot('stats-export', 1500);
+    await shotSettled('stats-export', 500);
     await escape();
     await open('/stats/traps-catches?view=chart');
-    await shot('stats-catches-chart', 2500);
+    await shotSettled('stats-catches-chart', 600);
     await open('/stats/traps-species');
-    await shot('stats-species', 2500);
+    await shotSettled('stats-species', 300);
     await open('/stats/traps-species?view=chart');
-    await shot('stats-species-chart', 2500);
+    await shotSettled('stats-species-chart', 600);
     await open('/stats/trap-types');
-    await shot('stats-trap-types', 2500);
+    await shotSettled('stats-trap-types', 300);
     await open('/stats/trap-types?view=chart');
-    await shot('stats-trap-types-chart', 2500);
+    await shotSettled('stats-trap-types-chart', 600);
     await open('/stats/traps-ranking');
-    await shot('stats-ranking', 2500);
+    await shotSettled('stats-ranking', 300);
     await open('/stats/traps-ranking?view=chart');
-    await shot('stats-ranking-chart', 2500);
+    await shotSettled('stats-ranking-chart', 600);
     await open('/stats/traps-coverage');
-    await shot('stats-coverage', 3500);
+    await shotSettled('stats-coverage', 1500);
     await open('/stats/traps-pressure');
-    await shot('stats-pressure', 3500);
+    await shotSettled('stats-pressure', 1500);
   });
 
   for (const [path, label] of [
@@ -571,6 +592,10 @@ async function walk(name) {
     }
     console.log(`== ${name}`);
     await walk(name);
+  }
+  if (ONLY.length && !ranSteps) {
+    failures += 1;
+    console.log(`FAIL no step matches "${ONLY.join(' ')}": use a substring of a step label (see the screenshot names)`);
   }
   console.log(`${warnings} overflow warning(s), ${failures} failed step(s)`);
   if (failures) process.exitCode = 1;
