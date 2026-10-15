@@ -1,5 +1,6 @@
 import logging
-import time
+import signal
+import threading
 
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError, connection
@@ -20,7 +21,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         every = max(60, options['every'])
         logger.info("Scheduler started, a pass every %s s", every)
-        while True:
+        # As PID 1 the process has no default SIGTERM action: without a handler Docker waits
+        # its grace period (10 s) then sends SIGKILL. Stop between two jobs, not in the middle.
+        stop = threading.Event()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, lambda *_: stop.set())
+        while not stop.is_set():
             # Each job on its own: one failing does not hold back the others
             for name, job in (('reminders', self.send_reminders), ('nest season', nest_season.run),
                               ('nest alerts', self.send_nest_alerts), ('push retention', push.purge_expired),
@@ -34,7 +40,10 @@ class Command(BaseCommand):
                     logger.exception("Scheduler job %s failed", name)
                 finally:
                     connection.close()
-            time.sleep(every)
+                if stop.is_set():
+                    break
+            stop.wait(every)
+        logger.info("Scheduler stopped")
 
     @staticmethod
     def send_reminders():
