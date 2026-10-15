@@ -19,7 +19,9 @@ from . import pending
 from .images import delete_files, store_photo
 from .models import Apiary, Hornet, Nest, NestEvent, NestPhoto, User
 from .stats.periods import PeriodError, resolve_archive_period
-from .serializers import HornetSerializer, NestEventInputSerializer, NestSerializer, PublicNestSerializer
+from .serializers import (
+    HornetSerializer, NestEventInputSerializer, NestSerializer, PublicHornetSerializer, PublicNestSerializer,
+)
 from hornet_finder_api.authentication import JWTBearerAuthentication, HasAnyRole
 from hornet_finder_api.roles import ADMIN, APP_ROLES, BEEKEEPER, HUNTER
 from audit import recorder as audit
@@ -183,7 +185,10 @@ class HornetViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelVie
             return error_response
         
         queryset = self.apply_archive_year_filters(queryset, request)
-        serializer = self.get_serializer(queryset, many=True)
+        # The reporter's name is personal data: shown to the roles that see every nest with its author,
+        # not to anonymous visitors nor to trappers
+        serializer_class = HornetSerializer if nest_perms.sees_all_nests(request) else PublicHornetSerializer
+        serializer = serializer_class(queryset, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
     @extend_schema(
@@ -197,7 +202,8 @@ class HornetViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelVie
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    # No need permission to create a hornet, but only beekeepers and admins can list, and only admins can retrieve, update, partial_update and destroy them
+    # Anyone may list the sightings (without their author unless the role sees every nest); only nest hunters
+    # (trained, hence members of /hunters) and admins record them; only admins retrieve, update, archive and delete
     def get_authenticators(self): # This method is used here because we can not use the @authentication_classes decorator on the herited actions
         # list, create, retrieve, update, partial_update, destroy are the names of the actions that are automatically created by the ModelViewSet
         # Each action corresponds to a method in the viewset, e.g. list corresponds to the GET /hornets/ endpoint.
@@ -209,9 +215,9 @@ class HornetViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelVie
 
     def get_permissions(self): # This method is used here because we can not use the @permission_classes decorator on the herited actions
         # Allow public access to list action (viewing hornets)
-        # Sightings and releases are the work of nest hunters, and of beekeepers at their hives
+        # Sightings and releases are the work of the (trained) nest hunters
         if hasattr(self, 'action') and self.action in ('create', 'my'):
-            return [HasAnyRole([HUNTER, BEEKEEPER, ADMIN])]
+            return [HasAnyRole([HUNTER, ADMIN])]
         elif hasattr(self, 'action') and self.action in ['retrieve', 'update', 'partial_update', 'destroy', 'archive', 'archive_candidates', 'bulk_archive']:
             return [HasAnyRole(['admin'])]
         return super().get_permissions()

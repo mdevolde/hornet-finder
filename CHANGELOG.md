@@ -61,6 +61,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   extent of the place found (a house, a street, a village).
 
 ### Changed
+- Recording a hornet sighting is reserved for nest hunters (trained, members of `/hunters`) and
+  admins: beekeepers lose it. Reporting a nest stays open to every role and now comes first in
+  the "Ajouter ici" sheet. Editing or deleting a hornet in the app follows the API: admins only.
 - Nests: the map hides rejected and abandoned nests, and colours the others by status
   (reported red, confirmed orange, destroyed grey). Editing a nest no longer sets it
   destroyed: its destruction goes through its journal (the old `destroyed` field of the
@@ -86,6 +89,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Map: the "+" additions go to the crosshair placed from the position sheet (a trap
   at the crosshair; a hornet "vu d'ici" at the crosshair when it was placed at an
   address, otherwise at the GPS position), instead of the map centre or the GPS.
+
+### Security
+- The list of hornet sightings no longer shows who reported them to anonymous visitors nor to
+  trappers (personal data, GDPR); nest hunters, beekeepers and admins still see the author.
 
 ## [1.4.0] - 2026-10-13
 

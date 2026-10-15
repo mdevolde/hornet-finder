@@ -3105,6 +3105,36 @@ class TradeSeparationTests(TestCase):
         force_authenticate(request, user=self.hunter_user)
         self.assertEqual(HornetViewSet.as_view({'post': 'create'})(request).status_code, 201)
 
+    def test_a_beekeeper_cannot_record_a_hornet(self):
+        request = self.factory.post('/hornets/', {'latitude': 50.5, 'longitude': 4.5, 'direction': 90})
+        force_authenticate(request, user=FakeTrapUser(['beekeeper'], uuid_module.uuid4()))
+        self.assertEqual(HornetViewSet.as_view({'post': 'create'})(request).status_code, 403)
+
+    def _hornets(self, user=None):
+        hornet = _make_hornet(timezone.now().year)
+        hornet.created_by = self.trapper
+        hornet.save()
+        request = self.factory.get('/hornets/?lat=50.5&lon=4.5&radius=5')
+        if user is not None:
+            force_authenticate(request, user=user)
+        response = HornetViewSet.as_view({'get': 'list'})(request)
+        self.assertEqual(response.status_code, 200)
+        return response.data
+
+    def test_anonymous_visitors_and_trappers_do_not_see_who_reported_a_hornet(self):
+        for user in (None, self.trapper_user):
+            data = self._hornets(user)
+            self.assertTrue(data)
+            for item in data:
+                self.assertNotIn('created_by', item)
+                self.assertNotIn('linked_nest', item)
+
+    def test_a_hunter_sees_who_reported_a_hornet(self):
+        with patch('hornet.serializers.get_user_display_name', return_value='Tester'):
+            data = self._hornets(self.hunter_user)
+        self.assertTrue(data)
+        self.assertTrue(all('created_by' in item for item in data))
+
     def test_a_trapper_reports_a_nest(self):
         request = self.factory.post('/nests/', {'latitude': 50.5, 'longitude': 4.5})
         force_authenticate(request, user=self.trapper_user)

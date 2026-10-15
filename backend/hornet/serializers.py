@@ -83,6 +83,19 @@ class HornetSerializer(GPSValidationMixin, serializers.ModelSerializer):
 
 
 
+class PublicHornetSerializer(serializers.ModelSerializer):
+    """
+    Sighting as seen by those who may not know who reported it: anonymous
+    visitors and trappers. No author, no link to a nest.
+    """
+
+    class Meta:
+        model = Hornet
+        fields = ['id', 'longitude', 'latitude', 'direction', 'duration', 'mark_color_1', 'mark_color_2',
+                  'created_at', 'archived', 'archived_at']
+        read_only_fields = fields
+
+
 class NestPhotoSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
