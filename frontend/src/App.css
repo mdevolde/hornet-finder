@@ -751,6 +751,53 @@ button.module-card {
   padding: 0.2rem 0;
 }
 
+/* Steps of a nest (reported, confirmed, destroyed): three bars, coloured once reached */
+.nest-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+}
+
+.nest-steps li {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nest-steps li::before {
+  content: '';
+  height: 0.3rem;
+  border-radius: 0.2rem;
+  background: var(--bs-border-color);
+  margin-bottom: 0.25rem;
+}
+
+.nest-steps li.done {
+  color: var(--bs-body-color);
+}
+
+.nest-steps li.step-reported::before { background: var(--tone-nest); }
+.nest-steps li.step-confirmed::before { background: var(--bs-warning); }
+.nest-steps li.step-destroyed::before { background: var(--bs-secondary); }
+
+/* Journal of a nest */
+.nest-journal-icon {
+  width: 1.5rem;
+  text-align: center;
+}
+
+.nest-journal-photo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+}
+
 /* Photos of a nest: square tiles that wrap, the last one adds photos */
 .nest-photo-grid {
   display: flex;

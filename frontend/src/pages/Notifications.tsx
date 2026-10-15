@@ -26,6 +26,25 @@ const KIND_INFO: Record<NotificationKind, { icon: string; detail?: string; help:
     help: "Quand l'attractif d'un de vos pièges est à renouveler, selon le délai de son type, aux mêmes heures "
       + 'que les rappels de relevé.',
   },
+  nest_new: {
+    icon: '🏴',
+    detail: '9 h–20 h · dimanche dès 10 h',
+    help: "Chaque nid signalé. Activé d'office pour les coordinateurs des chasseurs et les administrateurs ; un "
+      + "apiculteur l'active s'il le souhaite. Un nid signalé la nuit est annoncé à l'ouverture, à 9 h (10 h le "
+      + 'dimanche) ; à partir de trois nids en même temps, un seul message les regroupe.',
+  },
+  nest_near_apiary: {
+    icon: '🍯',
+    detail: 'À moins de 1 km',
+    help: "Un nid actif signalé à moins de 1 km d'un de vos ruchers, ou d'un rucher partagé avec l'association "
+      + "que vous administrez. Aux mêmes heures que les nouveaux nids. L'écran verrouillé montre la commune, jamais "
+      + "l'adresse.",
+  },
+  nest_followup: {
+    icon: '📍',
+    help: "Ce que devient un nid que vous avez signalé : confirmé, écarté, trouvé vide ou détruit. Rien quand c'est "
+      + 'vous qui le déclarez détruit.',
+  },
   group_message: {
     icon: '👥',
     help: 'Les messages des administrateurs de vos associations et du coordinateur des piégeurs.',

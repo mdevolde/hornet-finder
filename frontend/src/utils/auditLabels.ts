@@ -18,7 +18,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'nest.reported': 'Nid signalé',
   'nest.updated': 'Nid modifié',
   'nest.destroyed': 'Nid marqué détruit',
-  'nest.reactivated': 'Nid marqué actif',
+  'nest.reactivated': 'Nid réactivé',
+  'nest.visited': 'Nid visité',
+  'nest.event_deleted': 'Entrée du journal de nid supprimée',
+  'nest.season_ended': 'Nids non traités abandonnés (fin de saison)',
   'nest.deleted': 'Nid supprimé',
   'nest.photo_added': 'Photos de nid ajoutées',
   'nest.photo_removed': 'Photo de nid retirée',
@@ -171,6 +174,14 @@ export const FIELD_LABELS: Record<string, string> = {
   public_place: 'Lieu public',
   destroyed: 'Détruit',
   destroyed_at: 'Date de destruction',
+  status: 'Statut',
+  nest_type: 'Type de nid',
+  height_class: 'Hauteur',
+  size_class: 'Taille',
+  outcome: 'Résultat',
+  actor: 'Détruit par',
+  means: 'Moyens',
+  state: 'État au signalement',
   comments: 'Commentaires',
   created_by: 'Signalé par',
   archived: 'Archivé',
@@ -258,8 +269,20 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
   kind: {
     installation: 'Installation', inspection: 'Inspection', cleaning: 'Nettoyage', refill: 'Remplissage',
     repair: 'Réparation', removal: 'Retrait', catch: 'Capture',
+    visit: 'Visite', destruction: 'Destruction', reactivation: 'Réactivation', report: 'Signalement',
+    season_end: 'Fin de saison',
   },
   infestation_level: { 1: 'Faible', 2: 'Moyen', 3: 'Élevé' },
+  status: {
+    reported: 'Signalé', confirmed: 'Confirmé', destroyed: 'Détruit', rejected: 'Écarté', abandoned: 'Abandonné',
+  },
+  nest_type: { primary: 'Primaire', secondary: 'Secondaire' },
+  outcome: { active: 'Nid actif', empty: 'Nid vide', other_species: 'Autre espèce', not_found: 'Introuvable' },
+  state: { active: 'Actif', empty: 'Vide', unknown: 'Inconnu' },
+  actor: {
+    fixmystreet: 'FixMyStreet', company: 'Entreprise privée', firefighters: 'Pompiers', municipality: 'Commune',
+    other: 'Autre', unknown: 'Inconnu',
+  },
 };
 
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;

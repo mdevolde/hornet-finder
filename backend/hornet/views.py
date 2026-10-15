@@ -262,7 +262,8 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
     serializer_class = NestSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     # Actions answering one nest with its journal
-    JOURNAL_ACTIONS = ('retrieve', 'create', 'update', 'partial_update', 'events', 'delete_event')
+    JOURNAL_ACTIONS = ('retrieve', 'create', 'update', 'partial_update', 'events', 'delete_event',
+                       'add_photos', 'delete_photo')
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
