@@ -45,9 +45,9 @@ export const MODULES: ModuleDefinition[] = [
   },
   {
     id: 'nests',
-    title: 'Recherche des nids',
+    title: 'Gestion des nids',
     shortTitle: 'Nids',
-    description: 'Cartographiez les observations de frelons, les nids et les ruchers.',
+    description: "Signalez un nid et suivez-le jusqu'à sa destruction.",
     icon: 'bi-geo-alt-fill',
     tone: 'nest',
     path: '/nests',

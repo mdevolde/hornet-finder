@@ -101,6 +101,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/map" element={<MapPage />} />
       <Route path="/nests" element={<Nests />} />
+      <Route path="/nests/list" element={<Nests />} />
       <Route
         path="/apiaries"
         element={<RequireRole roles={['beekeeper', 'admin']}><Apiaries /></RequireRole>}

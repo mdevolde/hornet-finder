@@ -28,10 +28,53 @@ export interface NestPhoto {
 export interface NestPermissions {
   update: boolean;
   photos: boolean;
-  /** Turn a destroyed nest back into an active one (admins) */
+  /** Turn a destroyed, rejected or abandoned nest back into a reported one (admins) */
   reactivate: boolean;
   delete: boolean;
   nearby_apiaries: boolean;
+  /** Record a visit (coordinators) */
+  visit: boolean;
+  /** Record the destruction (coordinators, and the reporter) */
+  destroy: boolean;
+}
+
+/** Where a nest stands, derived by the backend from its journal */
+export type NestStatus = 'reported' | 'confirmed' | 'destroyed' | 'rejected' | 'abandoned';
+export type NestEventKind = 'report' | 'visit' | 'destruction' | 'season_end' | 'reactivation';
+export type NestOutcome = 'active' | 'empty' | 'other_species' | 'not_found' | 'unknown' | '';
+export type NestType = 'primary' | 'secondary' | '';
+export type NestActor = 'fixmystreet' | 'company' | 'firefighters' | 'municipality' | 'other' | 'unknown';
+export type NestMeans = 'pole' | 'lift' | 'removed' | 'other';
+
+/** An entry of the journal of a nest */
+export interface NestEvent {
+  id: number;
+  kind: NestEventKind;
+  performed_at: string;
+  /** Null for those who do not see every nest (a reporter reading what became of theirs) */
+  performed_by: { guid: string; display_name: string } | null;
+  outcome: NestOutcome;
+  actor: NestActor | '';
+  fixmystreet_ref: string;
+  means: NestMeans[];
+  details: { nest_type?: NestType; height_class?: string; size_class?: string; date_unknown?: boolean };
+  comments: string;
+  photos: NestPhoto[];
+  can_delete: boolean;
+}
+
+/** What a visit, a destruction or a reactivation carries */
+export interface NestEventValues {
+  kind: 'visit' | 'destruction' | 'reactivation';
+  performed_at?: string;
+  outcome?: NestOutcome;
+  nest_type?: NestType;
+  height_class?: string;
+  size_class?: string;
+  actor?: NestActor;
+  fixmystreet_ref?: string;
+  means?: NestMeans[];
+  comments?: string;
 }
 
 // Types pour les données de nid
@@ -41,9 +84,16 @@ export interface Nest {
   longitude: number;
   public_place?: boolean;
   address?: string;
+  status?: NestStatus;
   destroyed?: boolean;
   /** Date of the destruction (neutralisation), kept by the backend */
   destroyed_at?: string | null;
+  nest_type?: NestType;
+  height_class?: string;
+  size_class?: string;
+  last_event_at?: string | null;
+  /** The journal, newest first: with the detail of one nest, not with a list */
+  events?: NestEvent[];
   created_at?: string;
   created_by?: { guid: string; display_name: string }; // GUID of the user who created the nest
   comments?: string | null;
@@ -53,16 +103,16 @@ export interface Nest {
   permissions?: NestPermissions;
 }
 
-/** Fields a nest manager may change */
+/** Fields a nest manager may change; the status goes through the journal */
 export interface NestUpdateValues {
   latitude?: number;
   longitude?: number;
   public_place?: boolean;
   address?: string;
   comments?: string;
-  destroyed?: boolean;
-  /** ISO datetime; left out to keep the recorded date */
-  destroyed_at?: string;
+  nest_type?: NestType;
+  height_class?: string;
+  size_class?: string;
 }
 
 /** First message of a DRF error, field errors included (`{"destroyed": ["…"]}`) */
@@ -160,12 +210,15 @@ export const fetchNestsDestroyedPublic = createAsyncThunk(
 // Le signaleur est le demandeur, déduit du jeton par le backend.
 export const createNest = createAsyncThunk(
   'nests/createNest',
-  async ({ latitude, longitude, public_place, address, comments, photos = [] }: {
+  async ({ latitude, longitude, public_place, address, comments, state, height_class, photos = [] }: {
     latitude: number;
     longitude: number;
     public_place?: boolean;
     address?: string;
     comments?: string;
+    /** What the reporter saw: an empty nest is recorded as abandoned */
+    state?: 'active' | 'empty' | 'unknown';
+    height_class?: string;
     photos?: File[];
   }, { rejectWithValue }) => {
     try {
@@ -173,6 +226,8 @@ export const createNest = createAsyncThunk(
       form.append('latitude', String(latitude));
       form.append('longitude', String(longitude));
       if (public_place !== undefined) form.append('public_place', String(public_place));
+      if (state) form.append('state', state);
+      if (height_class) form.append('height_class', height_class);
       if (address) form.append('address', address);
       if (comments) form.append('comments', comments);
       photos.forEach((photo) => form.append('photos', photo));
@@ -190,6 +245,52 @@ export const updateNest = createAsyncThunk(
   async ({ id, values }: { id: number; values: NestUpdateValues }, { rejectWithValue }) => {
     try {
       const response = await api.patch(`/nests/${id}/`, values);
+      return response.data as Nest;
+    } catch (error: unknown) {
+      return rejectWithValue(nestErrorMessage(error));
+    }
+  }
+);
+
+// One nest with its journal (any nest the requester may read)
+export const fetchNestDetail = createAsyncThunk(
+  'nests/fetchNestDetail',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/nests/${id}/`);
+      return response.data as Nest;
+    } catch (error: unknown) {
+      return rejectWithValue(nestErrorMessage(error));
+    }
+  }
+);
+
+// A visit, a destruction or a reactivation, with its photos; answers the nest
+export const recordNestEvent = createAsyncThunk(
+  'nests/recordNestEvent',
+  async ({ id, values, photos = [] }: { id: number; values: NestEventValues; photos?: File[] }, { rejectWithValue }) => {
+    try {
+      const form = new FormData();
+      Object.entries(values).forEach(([key, value]) => {
+        if (value === undefined || value === '') return;
+        if (Array.isArray(value)) value.forEach((item) => form.append(key, String(item)));
+        else form.append(key, String(value));
+      });
+      photos.forEach((photo) => form.append('photos', photo));
+      const response = await api.post(`/nests/${id}/events/`, form, MULTIPART);
+      return response.data as Nest;
+    } catch (error: unknown) {
+      return rejectWithValue(nestErrorMessage(error));
+    }
+  }
+);
+
+// Remove an entry of the journal; answers the nest
+export const deleteNestEvent = createAsyncThunk(
+  'nests/deleteNestEvent',
+  async ({ id, eventId }: { id: number; eventId: number }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/nests/${id}/events/${eventId}/`);
       return response.data as Nest;
     } catch (error: unknown) {
       return rejectWithValue(nestErrorMessage(error));
@@ -361,6 +462,9 @@ const nestsSlice = createSlice({
       .addCase(updateNest.fulfilled, (state, action) => replaceNest(state, action.payload))
       .addCase(addNestPhotos.fulfilled, (state, action) => replaceNest(state, action.payload))
       .addCase(deleteNestPhoto.fulfilled, (state, action) => replaceNest(state, action.payload))
+      .addCase(fetchNestDetail.fulfilled, (state, action) => replaceNest(state, action.payload))
+      .addCase(recordNestEvent.fulfilled, (state, action) => replaceNest(state, action.payload))
+      .addCase(deleteNestEvent.fulfilled, (state, action) => replaceNest(state, action.payload))
       // Cas de archiveNest : l'élément archivé disparaît de la vue courante (par défaut non-archivée)
       .addCase(archiveNest.fulfilled, (state, action) => {
         state.nests = state.nests.filter(nest => nest.id !== action.payload.id);

@@ -4,14 +4,15 @@ import time
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError, connection
 
-from hornet import push, reminders
+from hornet import nest_alerts, nest_season, push, reminders
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = ("Run the periodic jobs forever (the scheduler service of the compose files): "
-            "the trap reminders and the retention of the notifications, every --every seconds.")
+    help = ("Run the periodic jobs forever (the scheduler service of the compose files): the trap "
+            "reminders, the notifications about nests, the end of the nest season and the retention "
+            "of the notifications, every --every seconds.")
 
     def add_arguments(self, parser):
         parser.add_argument('--every', type=int, default=600, help="Seconds between two passes (600)")
@@ -21,7 +22,8 @@ class Command(BaseCommand):
         logger.info("Scheduler started, a pass every %s s", every)
         while True:
             # Each job on its own: one failing does not hold back the others
-            for name, job in (('reminders', self.send_reminders), ('push retention', push.purge_expired)):
+            for name, job in (('reminders', self.send_reminders), ('nest season', nest_season.run),
+                              ('nest alerts', self.send_nest_alerts), ('push retention', push.purge_expired)):
                 try:
                     job()
                 except DatabaseError as exc:
@@ -38,3 +40,9 @@ class Command(BaseCommand):
         result = reminders.run()
         if result.get('notifications'):
             logger.info("Reminders: %s", result)
+
+    @staticmethod
+    def send_nest_alerts():
+        result = nest_alerts.run()
+        if result.get('notifications'):
+            logger.info("Nest alerts: %s", result)

@@ -29,6 +29,7 @@ TYPES = {
     'hornet': 'hornet',
     'nest': 'nest',
     'nestphoto': 'nest_photo',
+    'nestevent': 'nest_event',
     'apiary': 'apiary',
     'trap': 'trap',
     'trapevent': 'trap_event',
@@ -46,8 +47,8 @@ TYPES = {
 FIELDS = {
     'hornet': ['latitude', 'longitude', 'direction', 'duration', 'mark_color_1', 'mark_color_2',
                'linked_nest', 'created_by', 'archived'],
-    'nest': ['latitude', 'longitude', 'address', 'public_place', 'destroyed', 'destroyed_at',
-             'comments', 'created_by', 'archived'],
+    'nest': ['latitude', 'longitude', 'address', 'public_place', 'status', 'destroyed', 'destroyed_at',
+             'nest_type', 'height_class', 'size_class', 'comments', 'created_by', 'archived'],
     'apiary': ['latitude', 'longitude', 'address', 'infestation_level', 'afsca_number', 'comments',
                'owner', 'photo'],
     'trap': ['latitude', 'longitude', 'address', 'trap_type', 'installed_at', 'active', 'visibility',
