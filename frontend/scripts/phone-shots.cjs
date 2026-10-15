@@ -257,6 +257,11 @@ async function walk(name) {
 
   // Trap manager, narrowed to the fixtures (their comment) so real traps never get in the way
   const FIXTURE_TRAPS = '/traps?q=ui-shots&active=all';
+  /** Runs a secondary action of an object sheet: they sit behind its "⋯" button (SheetActions) */
+  const sheetMenu = async (label) => {
+    await tap(page.locator('.modal.show [aria-label="Autres actions"]'));
+    await tap(page.locator(`.sheet-menu-item:has-text("${label}")`));
+  };
   const openFixtureSheet = async () => {
     if (!page.url().includes('/traps')) {
       await open(FIXTURE_TRAPS);
@@ -329,7 +334,7 @@ async function walk(name) {
 
   await step('trap-edit', async () => {
     if (!(await page.locator('.modal.show').count())) await openFixtureSheet();
-    await tap(page.locator('.modal.show [aria-label="Modifier"], .modal.show button:has-text("Modifier")'));
+    await sheetMenu('Modifier');
     await shot('trap-edit', 1500);
     await scrollDown();
     await shot('trap-edit-bottom', 400);
@@ -339,7 +344,7 @@ async function walk(name) {
 
   await step('trap-delete', async () => {
     if (!(await page.locator('.modal.show').count())) await openFixtureSheet();
-    await tap(page.locator('.modal.show [aria-label="Supprimer"], .modal.show button:has-text("Supprimer")'));
+    await sheetMenu('Supprimer');
     await shot('trap-delete-confirm', 1200);
     await tap(page.locator('.modal.show button:has-text("Annuler")'));
     await escape();
@@ -421,7 +426,7 @@ async function walk(name) {
   });
 
   await step('apiary-edit', async () => {
-    await tap(page.locator('.modal.show [aria-label="Modifier"]'));
+    await sheetMenu('Modifier');
     await shot('apiary-edit', 1200);
     await scrollDown();
     await shot('apiary-edit-bottom', 400);
@@ -523,8 +528,11 @@ async function walk(name) {
   });
 
   await step('account-console', async () => {
-    await page.goto(`${BASE.replace('://', '://auth.')}/realms/hornet-finder-dev/account`, { waitUntil: 'networkidle' });
-    await shot('account-console', 2500);
+    // The console is a single-page app that never goes network-idle: wait for the page, then let it render
+    await page.goto(`${BASE.replace('://', '://auth.')}/realms/hornet-finder-dev/account`, { waitUntil: 'load' });
+    // It renders after a silent SSO round trip (a few seconds)
+    await page.getByText('Informations personnelles').first().waitFor({ timeout: 20000 });
+    await shot('account-console', 800);
   });
 
   await step('admin-menu', async () => {

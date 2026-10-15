@@ -61,10 +61,21 @@ done
 
 USER_EMAIL="t-admin@example.invalid"
 BASE="https://${HOST}/api"
-# The map opens on DEFAULT_GEOLOCATION (Vedrin); the fixtures sit in its left
-# half, clear of the map controls and of the real data around the centre
-LAT=50.4930
-LNG=4.8800
+# The map opens on DEFAULT_GEOLOCATION and the fixtures must sit in its left
+# half, clear of the map controls and of the real data around the centre. The
+# default moves with the app, so read the one the dev server actually serves
+# (the Vite dev server exposes the sources) and fall back on the last known
+CENTER=$(curl -sk -m 20 "https://${HOST}/src/utils/constants.ts" | python3 -c "
+import re, sys
+m = re.search(r'DEFAULT_GEOLOCATION\\s*=\\s*\\{[^}]*latitude:\\s*([0-9.]+)[^}]*longitude:\\s*([0-9.]+)', sys.stdin.read())
+print('%s %s' % m.groups() if m else '50.491064 4.884473')")
+read -r CENTER_LAT CENTER_LNG <<< "$CENTER"
+# at <dlat> <dlng>: a point offset (in degrees) from the map centre
+at() { python3 -c "print('%.6f' % ($CENTER_LAT + $1), '%.6f' % ($CENTER_LNG + $2))"; }
+read -r LAT LNG <<< "$(at 0.001936 -0.004473)"
+read -r NEST_LAT NEST_LNG <<< "$(at -0.002064 -0.004973)"
+read -r HORNET_LAT HORNET_LNG <<< "$(at -0.004064 -0.003973)"
+read -r APIARY_LAT APIARY_LNG <<< "$(at -0.000064 -0.005473)"
 
 # t-admin carries mfa-required: its password grant needs the TOTP code
 TOKEN=$(kc_test_token "$USER_EMAIL" otp) || exit 1
@@ -83,11 +94,11 @@ TRAP1=$(create /traps/ -F "latitude=$LAT" -F "longitude=$LNG" -F "trap_type_slug
 TRAP2=$(create /traps/ -F "latitude=$LAT" -F "longitude=$LNG" -F "trap_type_slug=$TRAP_TYPE" \
     -F "installed_at=$(date +%F)" -F "comments=ui-shots")
 NEST=$(create /nests/ -H "Content-Type: application/json" \
-    -d "{\"latitude\": 50.4890, \"longitude\": 4.8795, \"comments\": \"ui-shots\"}")
+    -d "{\"latitude\": $NEST_LAT, \"longitude\": $NEST_LNG, \"comments\": \"ui-shots\"}")
 HORNET=$(create /hornets/ -H "Content-Type: application/json" \
-    -d "{\"latitude\": 50.4870, \"longitude\": 4.8805, \"direction\": 300, \"duration\": 300}")
+    -d "{\"latitude\": $HORNET_LAT, \"longitude\": $HORNET_LNG, \"direction\": 300, \"duration\": 300}")
 # An apiary with every optional field, shared so its sheet shows a sharing row
-APIARY=$(create /apiaries/ -F "latitude=50.4910" -F "longitude=4.8790" -F "infestation_level=2" \
+APIARY=$(create /apiaries/ -F "latitude=$APIARY_LAT" -F "longitude=$APIARY_LNG" -F "infestation_level=2" \
     -F "afsca_number=2.000.000.001" -F "address=Rue de l'Essai 1, 5020 Namur" -F "comments=ui-shots" \
     -F "photo=@frontend/public/vsab-logo-transparent.png")
 [[ -n "$APIARY" ]] && curl -sk -o /dev/null -X PUT "$BASE/apiaries/$APIARY/sharing/" "${H[@]}" \
