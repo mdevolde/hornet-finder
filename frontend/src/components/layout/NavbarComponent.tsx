@@ -25,6 +25,7 @@ import { ACTION_ICONS } from '../../utils/icons';
 import ReachabilityBanner from './ReachabilityBanner';
 import InstallSheet from './InstallSheet';
 import PushPromptSheet from './PushPromptSheet';
+import ThemeSheet from './ThemeSheet';
 
 const SITE_NAME = `Velutina${import.meta.env.DEV ? ' DEV' : ''}`;
 
@@ -41,6 +42,7 @@ export default function NavbarComponent() {
   const modules = visibleModules(roles).filter((module) => module.path);
   const { available: installAvailable } = useInstallState();
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
   const avatarUrl = useAvatarUrl();
   const dispatch = useAppDispatch();
   const userId = auth.user?.profile.sub;
@@ -84,7 +86,6 @@ export default function NavbarComponent() {
   return (
     <Navbar
       ref={navbarRef}
-      variant="light"
       expand="lg"
       fixed="top"
       className={`shadow-sm navbar-transparent ${expanded ? 'navbar-opaque' : ''}`}
@@ -161,6 +162,18 @@ export default function NavbarComponent() {
               <i className={`bi bi-${ACTION_ICONS.docs} me-2 d-lg-none module-icon`} data-tone="plain" aria-hidden="true" />
               Aide
             </Nav.Link>
+            <Nav.Link
+              as="button"
+              type="button"
+              onClick={() => {
+                close();
+                setShowTheme(true);
+              }}
+              className="navbar-module-link text-start"
+            >
+              <i className={`bi bi-${ACTION_ICONS.appearance} me-2 d-lg-none module-icon`} data-tone="plain" aria-hidden="true" />
+              Apparence
+            </Nav.Link>
             {installAvailable && (
               <Nav.Link
                 as="button"
@@ -235,6 +248,7 @@ export default function NavbarComponent() {
       />
 
       <ReachabilityBanner />
+      <ThemeSheet show={showTheme} onHide={() => setShowTheme(false)} />
       <InstallSheet signedIn={auth.isAuthenticated} />
       <PushPromptSheet signedIn={auth.isAuthenticated} />
     </Navbar>

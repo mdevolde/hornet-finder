@@ -616,6 +616,7 @@ export default function InteractiveMap({
         <TileLayer
           key={basemap}
           url={BASEMAPS[basemap].url}
+          className={basemap === 'plan' ? 'tiles-themable' : undefined}
           maxZoom={MAX_ZOOM}
           maxNativeZoom={MAX_NATIVE_ZOOM}
           attribution={BASEMAPS[basemap].attribution}
@@ -703,7 +704,7 @@ export default function InteractiveMap({
 
       {/* Barre de validation du déplacement d'un piège */}
       {movingTrapId !== null && (
-        <div className="map-bottom-bar p-2 bg-white rounded shadow d-flex align-items-center gap-2">
+        <div className="map-bottom-bar p-2 bg-body rounded shadow d-flex align-items-center gap-2">
           <span className="small px-1">
             <i className="bi bi-arrows-move me-1" aria-hidden="true" />
             Glissez le piège

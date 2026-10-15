@@ -42,4 +42,5 @@ export const ACTION_ICONS = {
   docs: 'book',
   search: 'search',
   history: 'clock-history',
+  appearance: 'palette',
 } as const;
