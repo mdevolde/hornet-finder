@@ -121,23 +121,24 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
             <>
               <Form.Group className="mb-3">
                 <Form.Label className="d-flex align-items-center">
-                  Type de nid
+                  Type de nid <span className="text-muted fw-normal ms-1">facultatif</span>
                   <HelpTip id="visit-type-help" doc="nests#status" title="Primaire ou secondaire">
                     Pré-choisi d&apos;après la date du signalement : un nid de février à mai est en général primaire
                     (bâti par la reine fondatrice, petit, souvent bas et abrité) ; à partir de juillet, secondaire
-                    (plus grand, souvent haut). À corriger si ce n&apos;est pas le cas.
+                    (plus grand, souvent haut). À corriger si ce n&apos;est pas le cas ; un second appui sur le choix
+                    l&apos;efface, comme pour la hauteur et la taille.
                   </HelpTip>
                 </Form.Label>
                 <ChipChoice name="visit-type" label="Type de nid" options={NEST_TYPES} value={nestType}
                   onChange={(value) => setNestType(value as NestType)} clearable disabled={saving} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Hauteur estimée</Form.Label>
+                <Form.Label>Hauteur estimée <span className="text-muted fw-normal">facultatif</span></Form.Label>
                 <ChipChoice name="visit-height" label="Hauteur estimée" options={HEIGHT_CLASSES} value={height}
                   onChange={(value) => setHeight(value as string)} clearable disabled={saving} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Taille estimée</Form.Label>
+                <Form.Label>Taille estimée <span className="text-muted fw-normal">facultatif</span></Form.Label>
                 <ChipChoice name="visit-size" label="Taille estimée" options={SIZE_CLASSES} value={size}
                   onChange={(value) => setSize(value as string)} clearable disabled={saving} />
               </Form.Group>
