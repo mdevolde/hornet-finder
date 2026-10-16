@@ -10,6 +10,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+### Fixed
+- Nests: a nest that belongs to several "À traiter" sections (to verify, near one's apiaries, one's own report) was counted once per section in the badges and listed several times. It now counts once and appears once, in the most urgent section.
+
 ## [1.5.0] - 2026-10-16
 
 ### Security
