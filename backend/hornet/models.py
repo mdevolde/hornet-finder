@@ -181,7 +181,8 @@ def nest_photo_path(instance, filename):
 
 class NestEvent(models.Model):
     """
-    One entry of the journal of a nest: its report, a visit, its destruction,
+    One entry of the journal of a nest: its report, a verification (`visit`:
+    a decision on the photos, a call with the reporter or a look on the spot), its destruction,
     the end of its season. The status of the nest follows (`Nest.recompute_status`).
 
     `alerted_at` is when the notifications this event calls for were sent (see
@@ -223,6 +224,8 @@ class NestEvent(models.Model):
     ]
     # How the nest was reached or dealt with; several at once (no product is tracked)
     MEANS = ('pole', 'lift', 'removed', 'other')
+    # What a verification relied on: there is not always someone on the spot
+    BASES = ('photos', 'call', 'on_site')
 
     # (kind, outcome) -> status of the nest; (kind, None) for any outcome
     STATUS_OF = {
@@ -247,7 +250,7 @@ class NestEvent(models.Model):
     actor = models.CharField(max_length=16, choices=ACTOR_CHOICES, blank=True, default='')
     fixmystreet_ref = models.CharField(max_length=32, blank=True, default='')
     means = models.JSONField(default=list, blank=True)
-    # What a visit noted about the nest (type, height, size), as it was then
+    # What a verification noted (type, height, size, as it was then) and relied on (`basis`)
     details = models.JSONField(default=dict, blank=True)
     comments = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)

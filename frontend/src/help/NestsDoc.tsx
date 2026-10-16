@@ -12,7 +12,7 @@ export default function NestsDoc() {
         <ul className="mb-0">
           <li><strong>Tout le monde</strong> signale un nid, suit ce qu&apos;il devient et peut dire qu&apos;il a été détruit.</li>
           <li><strong>Chasseurs de nids, apiculteurs, administrateurs</strong> voient tous les nids ; les piégeurs voient les nids détruits et les leurs.</li>
-          <li><strong>Coordinateurs</strong> (administrateurs de la plateforme et coordinateurs des chasseurs) : visite des nids signalés, destruction, modification des nids et de leurs photos, numéros AFSCA des ruchers à moins de 1 km.</li>
+          <li><strong>Coordinateurs</strong> (administrateurs de la plateforme et coordinateurs des chasseurs) : vérification des nids signalés, destruction, modification des nids et de leurs photos, numéros AFSCA des ruchers à moins de 1 km.</li>
           <li><strong>Administrateurs</strong> : eux seuls réactivent un nid détruit, écarté ou abandonné, l&apos;archivent ou le suppriment.</li>
         </ul>
       </section>
@@ -51,9 +51,14 @@ export default function NestsDoc() {
 
       <section data-section="status" className="mb-4">
         <h5 className="text-primary">Où en est un nid</h5>
+        <p>
+          La <strong>vérification</strong> ne demande pas toujours un passage sur place : la décision peut se prendre
+          sur les photos du signalement et après un échange, souvent par téléphone, avec la personne qui l&apos;a fait.
+          Le coordinateur note sur quoi elle repose (photos, échange avec le signaleur, sur place).
+        </p>
         <ul>
-          <li><strong>Signalé</strong> : en attente d&apos;une visite.</li>
-          <li><strong>Confirmé</strong> : un coordinateur a vu un nid actif de frelons asiatiques. Il relève alors le type (primaire ou secondaire), la hauteur et la taille.</li>
+          <li><strong>Signalé</strong> : en attente d&apos;une vérification.</li>
+          <li><strong>Confirmé</strong> : un coordinateur a vérifié qu&apos;il s&apos;agit d&apos;un nid actif de frelons asiatiques. Il relève alors le type (primaire ou secondaire), la hauteur et la taille.</li>
           <li><strong>Détruit</strong> : sa destruction est enregistrée, avec sa date.</li>
           <li><strong>Écarté</strong> : autre espèce (frelon européen, guêpes…) ou introuvable. Il n&apos;est plus montré sur la carte.</li>
           <li><strong>Abandonné</strong> : trouvé vide, ou pas détruit à la fin de l&apos;hiver : le 1<sup>er</sup> mars, les nids de la saison précédente encore signalés ou confirmés passent abandonnés.</li>
@@ -61,7 +66,7 @@ export default function NestsDoc() {
         <p className="mb-0">
           Le type est pré-choisi d&apos;après la date du signalement : de février à mai, un nid est en général
           <em> primaire</em> (bâti par la reine fondatrice, petit, souvent bas et abrité) ; à partir de juillet,
-          <em> secondaire</em> (plus grand, souvent haut). Chaque visite, destruction ou fin de saison s&apos;inscrit au
+          <em> secondaire</em> (plus grand, souvent haut). Chaque vérification, destruction ou fin de saison s&apos;inscrit au
           journal du nid, sur sa fiche ; un coordinateur peut en supprimer une entrée, le statut suit.
         </p>
       </section>

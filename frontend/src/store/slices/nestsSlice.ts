@@ -45,6 +45,8 @@ export type NestOutcome = 'active' | 'empty' | 'other_species' | 'not_found' | '
 export type NestType = 'primary' | 'secondary' | '';
 export type NestActor = 'fixmystreet' | 'company' | 'firefighters' | 'municipality' | 'other' | 'unknown';
 export type NestMeans = 'pole' | 'lift' | 'removed' | 'other';
+/** What a verification relied on */
+export type NestBasis = 'photos' | 'call' | 'on_site';
 
 /** An entry of the journal of a nest */
 export interface NestEvent {
@@ -57,15 +59,21 @@ export interface NestEvent {
   actor: NestActor | '';
   fixmystreet_ref: string;
   means: NestMeans[];
-  details: { nest_type?: NestType; height_class?: string; size_class?: string; date_unknown?: boolean };
+  details: {
+    nest_type?: NestType; height_class?: string; size_class?: string; basis?: NestBasis[]; date_unknown?: boolean;
+  };
   comments: string;
   photos: NestPhoto[];
   can_delete: boolean;
 }
 
-/** What a visit, a destruction or a reactivation carries */
+/**
+ * What a verification (`visit`: on the spot or not, from the photos or a call
+ * with the reporter), a destruction or a reactivation carries
+ */
 export interface NestEventValues {
   kind: 'visit' | 'destruction' | 'reactivation';
+  basis?: NestBasis[];
   performed_at?: string;
   outcome?: NestOutcome;
   nest_type?: NestType;

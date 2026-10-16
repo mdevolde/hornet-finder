@@ -19,7 +19,7 @@ export default function NestActionsSheet({ nest, onHide, onOpen, onLocate, onVis
   const actions = nest ? [
     { key: 'open', icon: ACTION_ICONS.sheet, label: 'Fiche et journal', onClick: () => onOpen(nest) },
     { key: 'locate', icon: ACTION_ICONS.showOnMap, label: 'Voir sur la carte', onClick: () => onLocate(nest) },
-    ...(permissions?.visit ? [{ key: 'visit', icon: 'search', label: 'Visite', onClick: () => onVisit(nest) }] : []),
+    ...(permissions?.visit ? [{ key: 'visit', icon: 'search', label: 'Vérifier', onClick: () => onVisit(nest) }] : []),
     ...(permissions?.destroy ? [{
       key: 'destruction',
       icon: 'check2-circle',

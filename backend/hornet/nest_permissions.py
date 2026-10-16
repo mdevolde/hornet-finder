@@ -6,7 +6,8 @@ Access rules of the nests module.
 * The content of a nest (fields, photos) is managed by the coordinators: the
   platform admins and the administrators of the nest hunters (members of
   `/hunters/admin`, the same `<group>/admin` convention as in
-  `trap_permissions.py`). They alone record a visit.
+  `trap_permissions.py`). They alone record a verification (from the
+  photos, a call with the reporter or on the spot).
 * A destruction is recorded by a coordinator, or declared by whoever reported
   the nest: they are usually the first to know.
 * A destroyed, rejected or abandoned nest stays so: only a platform admin
@@ -69,7 +70,7 @@ def can_reactivate_nest(request) -> bool:
 
 
 def can_visit_nest(request, nest) -> bool:
-    """Recording a visit (active, empty, another species, not found): coordinators, on a nest not destroyed."""
+    """Recording a verification (active, empty, another species, not found): coordinators, on a nest not destroyed."""
     return nest.status != nest.STATUS_DESTROYED and is_nest_manager(request)
 
 

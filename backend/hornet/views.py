@@ -435,8 +435,9 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
     @action(detail=True, methods=['post'], url_path='events')
     def events(self, request, pk=None):
         """
-        Record a visit (`outcome`: active, empty, other_species, not_found;
-        `nest_type`, `height_class`, `size_class`), a destruction (`performed_at`,
+        Record a verification (`kind=visit`: on the spot or not, from the photos
+        or a call with the reporter; `outcome`: active, empty, other_species,
+        not_found; `basis`; `nest_type`, `height_class`, `size_class`), a destruction (`performed_at`,
         `actor`, `fixmystreet_ref`, `means`) or a reactivation (admins), with
         `comments` and `photos` files. The status of the nest follows.
         """
@@ -449,7 +450,7 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
         values = entry.validated_data
         kind = values['kind']
         if kind == NestEvent.KIND_VISIT and not nest_perms.can_visit_nest(request, nest):
-            raise PermissionDenied("Seuls les coordinateurs enregistrent une visite, et pas sur un nid détruit.")
+            raise PermissionDenied("Seuls les coordinateurs enregistrent une vérification, et pas sur un nid détruit.")
         if kind == NestEvent.KIND_DESTRUCTION and not nest_perms.can_record_destruction(request, nest):
             raise PermissionDenied("Ce nid est déjà détruit, ou vous ne pouvez pas enregistrer sa destruction.")
         if kind == NestEvent.KIND_REACTIVATION and (
@@ -457,8 +458,10 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
             raise PermissionDenied("Seul un administrateur réactive un nid détruit, écarté ou abandonné.")
         uploaded = self._uploaded_photos()
         user = self._requester()
-        details = {field: values.pop(field) for field in ('nest_type', 'height_class', 'size_class')
-                   if values.get(field)}
+        known = {field: values.pop(field) for field in ('nest_type', 'height_class', 'size_class')
+                 if values.get(field)}
+        basis = values.pop('basis', None)
+        details = {**known, **({'basis': basis} if basis else {})}
         action_code = {NestEvent.KIND_VISIT: 'nest.visited', NestEvent.KIND_DESTRUCTION: 'nest.destroyed',
                        NestEvent.KIND_REACTIVATION: 'nest.reactivated'}[kind]
         with audit.track(request, action_code, nest) as tracked:
@@ -468,13 +471,13 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
                 # A reactivation tells nobody; the others may (see nest_alerts.py)
                 alerted_at=timezone.now() if kind == NestEvent.KIND_REACTIVATION else None,
             )
-            if details:
-                # What the visit saw becomes what is known of the nest
-                Nest.objects.filter(pk=nest.pk).update(**details)
+            if known:
+                # What the verification found becomes what is known of the nest
+                Nest.objects.filter(pk=nest.pk).update(**known)
             nest.recompute_status()
             self._store_photos(nest, uploaded, user, event=event)
-            tracked.extra = {'event': event.pk, 'kind': kind, 'outcome': event.outcome, 'actor': event.actor,
-                             'means': event.means, 'photos': len(uploaded)}
+            tracked.extra = {'event': event.pk, 'kind': kind, 'outcome': event.outcome, 'basis': basis or [],
+                             'actor': event.actor, 'means': event.means, 'photos': len(uploaded)}
             tracked.refs = [audit.ref('nest_event', event.pk)]
         return Response(self.get_serializer(self._fresh(nest)).data, status=status.HTTP_201_CREATED)
 

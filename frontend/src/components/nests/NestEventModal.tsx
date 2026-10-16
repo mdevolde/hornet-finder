@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
 import { useAppDispatch } from '../../store/hooks';
 import {
-  recordNestEvent, type Nest, type NestActor, type NestMeans, type NestOutcome, type NestType,
+  recordNestEvent, type Nest, type NestActor, type NestBasis, type NestMeans, type NestOutcome, type NestType,
 } from '../../store/store';
 import { HelpTip } from '../common';
 import { PhotoInput } from '../traps';
 import { AppModal } from '../ui';
 import { dateInputToIso, toDateInputValue } from '../../utils/format';
 import {
-  ACTORS, HEIGHT_CLASSES, MEANS, NEST_TYPES, SIZE_CLASSES, VISIT_OUTCOMES, suggestedNestType,
+  ACTORS, BASES, HEIGHT_CLASSES, MEANS, NEST_TYPES, SIZE_CLASSES, VISIT_OUTCOMES, suggestedNestType,
 } from '../../utils/nestStatus';
 import ChipChoice from './ChipChoice';
 
@@ -33,6 +33,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
 
   // Visit
   const [outcome, setOutcome] = useState<NestOutcome>('');
+  const [basis, setBasis] = useState<NestBasis[]>([]);
   const [nestType, setNestType] = useState<NestType>(nest.nest_type || suggestedNestType(nest.created_at));
   const [height, setHeight] = useState(nest.height_class ?? '');
   const [size, setSize] = useState(nest.size_class ?? '');
@@ -50,7 +51,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isVisit && !outcome) {
-      setError('Choisissez le résultat de la visite.');
+      setError('Choisissez le résultat de la vérification.');
       return;
     }
     setSaving(true);
@@ -61,7 +62,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
         photos,
         values: isVisit
           ? {
-            kind, outcome, comments: comments.trim(),
+            kind, outcome, basis, comments: comments.trim(),
             ...(outcome === 'active' ? { nest_type: nestType, height_class: height, size_class: size } : {}),
           }
           : {
@@ -78,7 +79,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
     }
   };
 
-  const title = isVisit ? `Visite du nid #${nest.id}` : asReporter
+  const title = isVisit ? `Vérification du nid #${nest.id}` : asReporter
     ? `Le nid #${nest.id} a été détruit ?` : `Destruction du nid #${nest.id}`;
 
   return (
@@ -105,27 +106,39 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
             <ChipChoice name="visit-outcome" label="Résultat" options={VISIT_OUTCOMES} value={outcome}
               onChange={(value) => setOutcome(value as NestOutcome)} disabled={saving} />
           </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label className="d-flex align-items-center">
+              Sur base de <span className="text-muted fw-normal ms-1">facultatif</span>
+              <HelpTip id="verification-basis-help" doc="nests#status" title="Sur base de">
+                Ce qui fonde la décision : les photos du signalement, un échange (par téléphone) avec la personne qui
+                a signalé le nid, ou un passage sur place. Plusieurs à la fois.
+              </HelpTip>
+            </Form.Label>
+            <ChipChoice name="verification-basis" label="Sur base de" options={BASES} value={basis} multiple
+              onChange={(value) => setBasis(value as NestBasis[])} disabled={saving} />
+          </Form.Group>
           {outcome === 'active' && (
             <>
               <Form.Group className="mb-3">
                 <Form.Label className="d-flex align-items-center">
-                  Type de nid
+                  Type de nid <span className="text-muted fw-normal ms-1">facultatif</span>
                   <HelpTip id="visit-type-help" doc="nests#status" title="Primaire ou secondaire">
                     Pré-choisi d&apos;après la date du signalement : un nid de février à mai est en général primaire
                     (bâti par la reine fondatrice, petit, souvent bas et abrité) ; à partir de juillet, secondaire
-                    (plus grand, souvent haut). À corriger si ce n&apos;est pas le cas.
+                    (plus grand, souvent haut). À corriger si ce n&apos;est pas le cas ; un second appui sur le choix
+                    l&apos;efface, comme pour la hauteur et la taille.
                   </HelpTip>
                 </Form.Label>
                 <ChipChoice name="visit-type" label="Type de nid" options={NEST_TYPES} value={nestType}
                   onChange={(value) => setNestType(value as NestType)} clearable disabled={saving} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Hauteur estimée</Form.Label>
+                <Form.Label>Hauteur estimée <span className="text-muted fw-normal">facultatif</span></Form.Label>
                 <ChipChoice name="visit-height" label="Hauteur estimée" options={HEIGHT_CLASSES} value={height}
                   onChange={(value) => setHeight(value as string)} clearable disabled={saving} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Taille estimée</Form.Label>
+                <Form.Label>Taille estimée <span className="text-muted fw-normal">facultatif</span></Form.Label>
                 <ChipChoice name="visit-size" label="Taille estimée" options={SIZE_CLASSES} value={size}
                   onChange={(value) => setSize(value as string)} clearable disabled={saving} />
               </Form.Group>

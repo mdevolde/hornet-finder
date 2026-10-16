@@ -105,6 +105,19 @@ class VisitTests(NestJournalTestCase):
         self.assertEqual(audit_event.changes['status'], ['reported', 'confirmed'])
         self.assertIn(f'nest_event:{visit.pk}', audit_event.refs)
 
+    def test_a_verification_says_what_it_relied_on(self):
+        response = self.record(self.coordinator_user, fmt='multipart', kind='visit', outcome='active',
+                               basis=['call', 'photos', 'call'])
+        self.assertEqual(response.status_code, 201, response.data)
+        visit = self.nest.events.get(kind='visit')
+        self.assertEqual(visit.details, {'basis': ['call', 'photos']})
+        # Nothing of it on the nest itself
+        self.nest.refresh_from_db()
+        self.assertEqual(self.nest.nest_type, '')
+        self.assertEqual(AuditEvent.objects.get(action='nest.visited').changes['basis'], ['call', 'photos'])
+        self.assertEqual(self.record(self.coordinator_user, kind='visit', outcome='active',
+                                     basis=['telepathy']).status_code, 400)
+
     def test_another_species_or_nothing_found_rejects_it(self):
         for outcome in ('other_species', 'not_found'):
             nest = self.report(self.reporter_user)
