@@ -143,6 +143,10 @@ class Nest(GeolocatedModel):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('User', null=True, blank=True, on_delete=models.SET_NULL)
     comments = models.TextField(null=True, blank=True)
+    # For the coordinators only (and the reporter): how to call the reporter back, and
+    # what they want the coordinators alone to read. Never in the public list
+    contact_phone = models.CharField(max_length=32, blank=True, default='')
+    private_comments = models.TextField(blank=True, default='')
     # Time of the latest event of the journal
     last_event_at = models.DateTimeField(null=True, blank=True)
     archived = models.BooleanField(default=False)

@@ -6,7 +6,7 @@ import { createNest, type Nest } from '../../store/store';
 import { AppModal } from '../ui';
 import { HelpTip } from '../common';
 import { PhotoInput } from '../traps';
-import { ChipChoice } from '../nests';
+import { ChipChoice, NestContactFields } from '../nests';
 import { OBJECT_ICONS } from '../../utils/icons';
 import { reverseGeocode } from '../../utils/geocoding';
 import { HEIGHT_CLASSES } from '../../utils/nestStatus';
@@ -30,7 +30,7 @@ interface AddNestPopupProps {
 /**
  * Report a nest at a position: photos first (they let a coordinator confirm
  * the species), what state it is in (an empty nest is recorded as abandoned),
- * the place, its height if known.
+ * the place, its height if known, and how a coordinator may call back.
  */
 export default function AddNestPopup({ show, onHide, latitude, longitude, onSuccess }: AddNestPopupProps) {
   const [state, setState] = useState<NestState>('active');
@@ -38,6 +38,8 @@ export default function AddNestPopup({ show, onHide, latitude, longitude, onSucc
   const [height, setHeight] = useState('');
   const [address, setAddress] = useState('');
   const [comments, setComments] = useState('');
+  const [phone, setPhone] = useState('');
+  const [privateComments, setPrivateComments] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,8 @@ export default function AddNestPopup({ show, onHide, latitude, longitude, onSucc
     setHeight('');
     setAddress('');
     setComments('');
+    setPhone('');
+    setPrivateComments('');
     setPhotos([]);
     setError(null);
   };
@@ -80,6 +84,8 @@ export default function AddNestPopup({ show, onHide, latitude, longitude, onSucc
         public_place: publicPlace,
         address: address.trim() || undefined,
         comments: comments.trim() || undefined,
+        contact_phone: phone.trim() || undefined,
+        private_comments: privateComments.trim() || undefined,
         state,
         height_class: height || undefined,
         photos,
@@ -161,7 +167,7 @@ export default function AddNestPopup({ show, onHide, latitude, longitude, onSucc
         />
       </Form.Group>
 
-      <Form.Group className="mb-0" controlId="nest-comments">
+      <Form.Group className="mb-3" controlId="nest-comments">
         <Form.Label>Commentaire</Form.Label>
         <Form.Control
           as="textarea"
@@ -172,6 +178,14 @@ export default function AddNestPopup({ show, onHide, latitude, longitude, onSucc
           disabled={loading}
         />
       </Form.Group>
+
+      <NestContactFields
+        phone={phone}
+        onPhoneChange={setPhone}
+        privateComments={privateComments}
+        onPrivateCommentsChange={setPrivateComments}
+        disabled={loading}
+      />
     </AppModal>
   );
 }

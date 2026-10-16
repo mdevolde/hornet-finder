@@ -457,12 +457,12 @@ class NestViewSet(ArchiveFilterMixin, GeographicFilterMixin, viewsets.ModelViewS
         values = entry.validated_data
         kind = values['kind']
         if kind == NestEvent.KIND_VISIT and not nest_perms.can_visit_nest(request, nest):
-            raise PermissionDenied("Seuls les coordinateurs enregistrent une vérification, et pas sur un nid détruit.")
+            raise PermissionDenied("Seuls les coordinateurs enregistrent une vérification, et pas sur un nid neutralisé.")
         if kind == NestEvent.KIND_DESTRUCTION and not nest_perms.can_record_destruction(request, nest):
-            raise PermissionDenied("Ce nid est déjà détruit, ou vous ne pouvez pas enregistrer sa destruction.")
+            raise PermissionDenied("Ce nid est déjà neutralisé, ou vous ne pouvez pas enregistrer sa neutralisation.")
         if kind == NestEvent.KIND_REACTIVATION and (
                 not nest_perms.can_reactivate_nest(request) or nest.status in Nest.OPEN_STATUSES):
-            raise PermissionDenied("Seul un administrateur réactive un nid détruit, écarté ou abandonné.")
+            raise PermissionDenied("Seul un administrateur réactive un nid neutralisé, écarté ou abandonné.")
         uploaded = self._uploaded_photos()
         user = self._requester()
         known = {field: values.pop(field) for field in ('nest_type', 'height_class', 'size_class')

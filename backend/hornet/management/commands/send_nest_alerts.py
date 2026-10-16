@@ -22,7 +22,8 @@ class Command(BaseCommand):
             now = timezone.make_aware(now)
         season = nest_season.run(now=now, dry_run=options['dry_run'])
         verb = "would be" if options['dry_run'] else "were"
-        self.stdout.write(f"{season['abandoned']} nest(s) of a past season {verb} marked abandoned")
+        self.stdout.write(f"{season['abandoned']} nest(s) of a past season {verb} marked abandoned, "
+                          f"{season['phones_erased']} phone number(s) {verb} erased")
         result = nest_alerts.run(now=now, dry_run=options['dry_run'])
         if 'skipped' in result:
             self.stdout.write(f"Notifications skipped: {result['skipped']}")

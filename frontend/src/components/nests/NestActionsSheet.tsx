@@ -23,7 +23,7 @@ export default function NestActionsSheet({ nest, onHide, onOpen, onLocate, onVis
     ...(permissions?.destroy ? [{
       key: 'destruction',
       icon: 'check2-circle',
-      label: permissions.visit ? 'Enregistrer la destruction' : 'Signaler sa destruction',
+      label: permissions.visit ? 'Enregistrer la neutralisation' : 'Signaler la neutralisation',
       onClick: () => onDestruction(nest),
     }] : []),
   ] : [];

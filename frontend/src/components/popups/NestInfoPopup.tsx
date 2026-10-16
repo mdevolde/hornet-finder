@@ -159,6 +159,11 @@ export default function NestInfoPopup({ show, onHide, nest, onAddAtLocation, onL
         <FieldRow label="Lieu">{current.public_place ? 'Public' : 'Privé'}</FieldRow>
         {current.created_at && !current.events && <FieldRow label="Signalé le">{formatDate(current.created_at)}</FieldRow>}
         {current.created_by && <FieldRow label="Signalé par">{current.created_by.display_name || current.created_by.guid}</FieldRow>}
+        {current.contact_phone && (
+          <FieldRow label="Téléphone">
+            <a href={`tel:${current.contact_phone.replace(/[^\d+]/g, '')}`}>{current.contact_phone}</a>
+          </FieldRow>
+        )}
         {current.address && (
           <div className="text-muted small mt-1 d-flex gap-1">
             <i className="bi bi-geo-alt flex-shrink-0" aria-hidden="true" />
@@ -166,6 +171,12 @@ export default function NestInfoPopup({ show, onHide, nest, onAddAtLocation, onL
           </div>
         )}
         {current.comments && <p className="small mt-2 mb-0">{current.comments}</p>}
+        {current.private_comments && (
+          <p className="small mt-2 mb-0 d-flex gap-1">
+            <i className="bi bi-lock flex-shrink-0" role="img" aria-label="Pour les coordinateurs" title="Pour les coordinateurs" />
+            <span>{current.private_comments}</span>
+          </p>
+        )}
 
         {permissions?.nearby_apiaries && show && sub === null && <NearbyApiaries nestId={id} />}
 
@@ -194,7 +205,7 @@ export default function NestInfoPopup({ show, onHide, nest, onAddAtLocation, onL
             {mayDestroy && (
               <Button variant={current.status === 'confirmed' || asReporter ? 'primary' : 'outline-primary'}
                 onClick={() => setSub({ kind: 'destruction' })}>
-                <span className="me-1" aria-hidden="true">✅</span>{asReporter ? 'Détruit ?' : 'Destruction'}
+                <span className="me-1" aria-hidden="true">✅</span>{asReporter ? 'Signaler neutralisé' : 'Neutraliser'}
               </Button>
             )}
           </SheetActions>

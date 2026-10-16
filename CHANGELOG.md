@@ -11,6 +11,10 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ## [Unreleased]
 
 ### Added
+- Nest report: a phone number to call the reporter back and a comment for the coordinators,
+  both optional, read only by the nest coordinators and the reporter, never on the public
+  map. The number stays out of the audit trail and is erased at the end of the season
+  (1 March). Coordinators see it on the nest sheet (tap to call) and can correct both.
 - Pending badges for every module: the nests module now shows, like the traps module, a
   red count on its landing tile when something waits for the user (nests to verify or to
   destroy for the coordinators, active nests near one's apiaries). The same counts appear
@@ -27,7 +31,7 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   de". Outcome active, empty, another species or not found, with the type (pre-chosen from the date: primary from February to
   May, secondary from July), height and size by classes. Destruction recorded by a
   coordinator (date, by whom, FixMyStreet included, means: pole, lift, nest removed) or
-  declared by whoever reported the nest ("Détruit ?"). The reporter can also say a nest is
+  reported by whoever reported the nest ("Signaler neutralisé"). The reporter can also say a nest is
   empty.
 - Nest notifications, from 9:00 (10:00 on Sundays) to 20:00 like the trap reminders, a
   summary from 3 at once: "Tous les nouveaux nids" (on for coordinators and admins, a
@@ -61,6 +65,11 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   extent of the place found (a house, a street, a village).
 
 ### Changed
+- Nests: "neutralisé" instead of "détruit" everywhere in the app, its notifications and its
+  help (status, steps, lists, journal, audit labels). The actions are verbs: "Neutraliser"
+  for a coordinator, "Signaler neutralisé" for the reporter (was "Détruit ?").
+- Nest lists on a phone: a row with a main action puts its buttons under the text, like the
+  traps and apiaries, so the address is no longer cut to a few letters.
 - Recording a hornet sighting is reserved for nest hunters (trained, members of `/hunters`) and
   admins: beekeepers lose it. Reporting a nest stays open to every role and now comes first in
   the "Ajouter ici" sheet. Editing or deleting a hornet in the app follows the API: admins only.
@@ -83,6 +92,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   centred on its label, a finger's height.
 
 ### Fixed
+- iPhone: a button no longer looks pressed after a tap left the finger over it, which made
+  "À traiter" and "Nids" both look selected on opening the nests module (buttons keep no
+  hover look on touch screens).
 - Desktop menu bar: a module and its pending count stay on one line (the count wrapped below
   the label and made the bar taller, out of line with "Aide" and "Apparence").
 - The menu button is read "Menu" by screen readers (it was "Toggle navigation").

@@ -4,6 +4,7 @@ import { useAppDispatch } from '../../store/hooks';
 import { updateNest, type Nest, type NestType, type NestUpdateValues } from '../../store/store';
 import { CoordinateInput } from '../common';
 import { AppModal } from '../ui';
+import NestContactFields from './NestContactFields';
 import { OBJECT_ICONS } from '../../utils/icons';
 import { HEIGHT_CLASSES, NEST_TYPES, SIZE_CLASSES } from '../../utils/nestStatus';
 
@@ -16,8 +17,9 @@ interface NestFormModalProps {
 
 /**
  * Edit a nest (admins, coordinators of the nest hunters): place, address,
- * comments, position, and what is known of it (type, height, size). Its
- * status goes through its journal (visit, destruction), not through here.
+ * comments, position, what is known of it (type, height, size) and how to
+ * reach the reporter. Its
+ * status goes through its journal (verification, neutralisation), not through here.
  */
 export default function NestFormModal({ onHide, nest, onSaved }: NestFormModalProps) {
   const dispatch = useAppDispatch();
@@ -25,6 +27,8 @@ export default function NestFormModal({ onHide, nest, onSaved }: NestFormModalPr
   const [publicPlace, setPublicPlace] = useState(Boolean(nest.public_place));
   const [address, setAddress] = useState(nest.address ?? '');
   const [comments, setComments] = useState(nest.comments ?? '');
+  const [phone, setPhone] = useState(nest.contact_phone ?? '');
+  const [privateComments, setPrivateComments] = useState(nest.private_comments ?? '');
   const [lat, setLat] = useState(nest.latitude);
   const [lng, setLng] = useState(nest.longitude);
   const [nestType, setNestType] = useState<NestType>(nest.nest_type ?? '');
@@ -43,6 +47,8 @@ export default function NestFormModal({ onHide, nest, onSaved }: NestFormModalPr
       public_place: publicPlace,
       address: address.trim(),
       comments: comments.trim(),
+      contact_phone: phone.trim(),
+      private_comments: privateComments.trim(),
       nest_type: nestType,
       height_class: height,
       size_class: size,
@@ -123,7 +129,7 @@ export default function NestFormModal({ onHide, nest, onSaved }: NestFormModalPr
         </div>
       </details>
 
-      <Form.Group className="mb-0" controlId="nest-edit-comments">
+      <Form.Group className="mb-3" controlId="nest-edit-comments">
         <Form.Label>Commentaire</Form.Label>
         <Form.Control
           as="textarea"
@@ -134,6 +140,15 @@ export default function NestFormModal({ onHide, nest, onSaved }: NestFormModalPr
           disabled={saving}
         />
       </Form.Group>
+
+      <NestContactFields
+        phone={phone}
+        onPhoneChange={setPhone}
+        privateComments={privateComments}
+        onPrivateCommentsChange={setPrivateComments}
+        asCoordinator
+        disabled={saving}
+      />
     </AppModal>
   );
 }

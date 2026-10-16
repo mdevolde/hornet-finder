@@ -170,7 +170,7 @@ class FollowupTests(NestAlertTestCase):
         nest_alerts.run(now=at(20, 11))
         self.assertEqual(self.received(self.reporter), [
             ("Votre signalement a avancé", f"Le nid #{self.nest.pk} est confirmé : c'est bien un nid de frelons asiatiques."),
-            ("Votre signalement a avancé", f"Le nid #{self.nest.pk} a été détruit le 20 octobre. Merci !"),
+            ("Votre signalement a avancé", f"Le nid #{self.nest.pk} a été neutralisé le 20 octobre. Merci !"),
         ])
 
     def test_not_when_they_declared_it_themselves(self):
@@ -200,16 +200,21 @@ class SeasonEndTests(TestCase):
             nest.recompute_status()
 
     def test_open_nests_are_abandoned_on_the_first_of_march(self):
-        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 2, 28, 12))), {'abandoned': 0})
-        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 3, 1, 0, 10))), {'abandoned': 1})
+        Nest.objects.filter(pk=self.destroyed.pk).update(contact_phone='0470 12 34 56')
+        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 2, 28, 12))),
+                         {'abandoned': 0, 'phones_erased': 0})
+        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 3, 1, 0, 10))),
+                         {'abandoned': 1, 'phones_erased': 1})
         self.open.refresh_from_db()
         self.destroyed.refresh_from_db()
         self.assertEqual((self.open.status, self.destroyed.status), (Nest.STATUS_ABANDONED, Nest.STATUS_DESTROYED))
+        self.assertEqual(self.destroyed.contact_phone, '')
         self.assertEqual(self.open.events.first().kind, NestEvent.KIND_SEASON_END)
         self.assertTrue(AuditEvent.objects.filter(action='nest.season_ended', refs__contains=[f'nest:{self.open.pk}'])
                         .exists())
         # Again: nothing left
-        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 3, 2))), {'abandoned': 0})
+        self.assertEqual(nest_season.run(now=timezone.make_aware(datetime(2026, 3, 2))),
+                         {'abandoned': 0, 'phones_erased': 0})
 
 
 class PreferenceTests(TestCase):

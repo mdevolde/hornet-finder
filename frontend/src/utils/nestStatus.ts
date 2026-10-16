@@ -8,7 +8,7 @@ import type { NestActor, NestBasis, NestEvent, NestMeans, NestOutcome, NestStatu
 export const NEST_STATUSES: { value: NestStatus; label: string; tone: string }[] = [
   { value: 'reported', label: 'Signalé', tone: 'danger' },
   { value: 'confirmed', label: 'Confirmé', tone: 'warning' },
-  { value: 'destroyed', label: 'Détruit', tone: 'secondary' },
+  { value: 'destroyed', label: 'Neutralisé', tone: 'secondary' },
   { value: 'rejected', label: 'Écarté', tone: 'light' },
   { value: 'abandoned', label: 'Abandonné', tone: 'light' },
 ];
@@ -100,7 +100,7 @@ export function nestEventTitle(event: NestEvent): { icon: string; title: string 
     case 'visit':
       return { icon: '🔍', title: `Vérification : ${labelOf(VISIT_OUTCOMES, event.outcome).toLowerCase() || 'sans résultat'}` };
     case 'destruction':
-      return { icon: '✅', title: 'Destruction' };
+      return { icon: '✅', title: 'Neutralisation' };
     case 'season_end':
       return { icon: '❄️', title: 'Fin de saison : abandonné' };
     case 'reactivation':

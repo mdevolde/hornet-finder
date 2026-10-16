@@ -251,6 +251,20 @@ button.module-card {
   }
 }
 
+/* Without a mouse, no hover look on buttons. iOS keeps :hover on whatever lies
+   under the last tap, even after the page changed: the tile tapped on the
+   landing page left the "Nids" tab under the finger looking selected next to
+   the real one. Pressed (:active) and selected (.active, checked) states keep
+   their own variables. Weighs more than the buttons set by context (three
+   classes, `.navbar.navbar-transparent .btn-outline-secondary`) */
+@media (hover: none) {
+  html .btn.btn.btn {
+    --bs-btn-hover-color: var(--bs-btn-color);
+    --bs-btn-hover-bg: var(--bs-btn-bg);
+    --bs-btn-hover-border-color: var(--bs-btn-border-color);
+  }
+}
+
 /* On a touch screen, iOS zooms into any field under 16px when it gets focus */
 @media (pointer: coarse) {
   /* Tiny spin arrows are useless to a finger: the numeric keypad does the job */

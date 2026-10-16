@@ -105,6 +105,9 @@ export interface Nest {
   created_at?: string;
   created_by?: { guid: string; display_name: string }; // GUID of the user who created the nest
   comments?: string | null;
+  /** The reporter's phone number and a comment for the coordinators: coordinators and reporter only */
+  contact_phone?: string;
+  private_comments?: string;
   archived?: boolean;
   archived_at?: string;
   photos?: NestPhoto[];
@@ -118,6 +121,8 @@ export interface NestUpdateValues {
   public_place?: boolean;
   address?: string;
   comments?: string;
+  contact_phone?: string;
+  private_comments?: string;
   nest_type?: NestType;
   height_class?: string;
   size_class?: string;
@@ -218,12 +223,17 @@ export const fetchNestsDestroyedPublic = createAsyncThunk(
 // Le signaleur est le demandeur, déduit du jeton par le backend.
 export const createNest = createAsyncThunk(
   'nests/createNest',
-  async ({ latitude, longitude, public_place, address, comments, state, height_class, photos = [] }: {
+  async ({
+    latitude, longitude, public_place, address, comments, contact_phone, private_comments, state, height_class,
+    photos = [],
+  }: {
     latitude: number;
     longitude: number;
     public_place?: boolean;
     address?: string;
     comments?: string;
+    contact_phone?: string;
+    private_comments?: string;
     /** What the reporter saw: an empty nest is recorded as abandoned */
     state?: 'active' | 'empty' | 'unknown';
     height_class?: string;
@@ -238,6 +248,8 @@ export const createNest = createAsyncThunk(
       if (height_class) form.append('height_class', height_class);
       if (address) form.append('address', address);
       if (comments) form.append('comments', comments);
+      if (contact_phone) form.append('contact_phone', contact_phone);
+      if (private_comments) form.append('private_comments', private_comments);
       photos.forEach((photo) => form.append('photos', photo));
       const response = await api.post('/nests/', form, MULTIPART);
       return response.data as Nest;

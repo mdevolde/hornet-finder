@@ -47,7 +47,7 @@ export const MODULES: ModuleDefinition[] = [
     id: 'nests',
     title: 'Gestion des nids',
     shortTitle: 'Nids',
-    description: "Signalez un nid et suivez-le jusqu'à sa destruction.",
+    description: "Signalez un nid et suivez-le jusqu'à sa neutralisation.",
     icon: 'bi-geo-alt-fill',
     tone: 'nest',
     path: '/nests',

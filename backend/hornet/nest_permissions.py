@@ -63,6 +63,11 @@ def can_edit_nest(request, nest) -> bool:
     return is_nest_manager(request)
 
 
+def can_see_contact(request, nest) -> bool:
+    """The reporter's phone number and the private comment: coordinators, and the reporter."""
+    return is_nest_manager(request) or is_reporter(request, nest)
+
+
 def can_reactivate_nest(request) -> bool:
     """Turning a destroyed, rejected or abandoned nest back into a reported one: platform admins only."""
     user = _authenticated(request)

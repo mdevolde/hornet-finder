@@ -55,6 +55,7 @@ export default function PrivacyPolicy() {
               <li>Informations de profil (nom, email) fournies par votre fournisseur d'identité (Facebook, Google, etc.)</li>
               <li>Données de géolocalisation des signalements</li>
               <li>Informations techniques relatives aux signalements (photos, descriptions, dates)</li>
+              <li>Si vous le donnez en signalant un nid, un numéro de téléphone pour vous rappeler, lu seulement par les coordinateurs des nids</li>
               <li>Journal des actions faites dans l'application (voir l'article 8)</li>
               <li>Si vous les activez, l'abonnement de vos appareils aux notifications et les notifications envoyées (voir l'article 7)</li>
             </ul>
@@ -80,7 +81,7 @@ export default function PrivacyPolicy() {
               l'application.
             </p>
             <p>
-              Sans connexion, la carte montre les nids détruits et les observations de frelons 
+              Sans connexion, la carte montre les nids neutralisés et les observations de frelons 
               (position, date, direction de vol), jamais le nom de la personne qui les a signalés. 
               L'adresse et les commentaires d'un nid situé sur un terrain privé ne sont visibles 
               que des utilisateurs connectés autorisés.
@@ -119,6 +120,10 @@ export default function PrivacyPolicy() {
               fois archivés par les administrateurs, ils sont supprimés définitivement{' '}
               <strong>cinq ans</strong> après leur signalement, avec les photos et le journal 
               d'un nid. Les observations et nids non archivés restent tant qu'ils ne le sont pas.
+            </p>
+            <p>
+              Le numéro de téléphone laissé avec un nid est effacé à la fin de sa saison, le 1<sup>er</sup> mars
+              suivant.
             </p>
             <p>Le journal des actions est conservé un an (article 8).</p>
             <p>
