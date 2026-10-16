@@ -90,6 +90,54 @@ class ReportTests(NestJournalTestCase):
         self.assertEqual(nest.status, Nest.STATUS_REPORTED)
 
 
+class ContactTests(NestJournalTestCase):
+    """The reporter's phone number and the private comment: the coordinators and the reporter only."""
+
+    def setUp(self):
+        super().setUp()
+        self.nest = self.report(self.reporter_user, contact_phone=' +32 470 12 34 56 ',
+                                private_comments='Appeler après 18 h', comments='Dans la haie')
+
+    def detail(self, user):
+        return self.get(user, f'/nests/{self.nest.pk}/', 'retrieve', pk=self.nest.pk)
+
+    def test_the_reporter_leaves_a_number_and_a_note(self):
+        self.assertEqual((self.nest.contact_phone, self.nest.private_comments),
+                         ('+32 470 12 34 56', 'Appeler après 18 h'))
+        for user in (self.reporter_user, self.coordinator_user, self.admin_user):
+            data = self.detail(user).data
+            self.assertEqual((data['contact_phone'], data['private_comments']),
+                             ('+32 470 12 34 56', 'Appeler après 18 h'))
+
+    def test_others_do_not_read_them(self):
+        data = self.detail(self.beekeeper_user).data
+        self.assertEqual(data['comments'], 'Dans la haie')
+        self.assertNotIn('contact_phone', data)
+        self.assertNotIn('private_comments', data)
+        rows = self.get(self.hunter_user, '/nests/managed/', 'managed').data['results']
+        row = next(row for row in rows if row['id'] == self.nest.pk)
+        self.assertNotIn('contact_phone', row)
+        self.assertNotIn('private_comments', row)
+
+    def test_a_number_is_checked(self):
+        for wrong in ('12345', 'call me', '+32 470 12 34 56 78 90 12'):
+            response = self.call('post', '/nests/', {'post': 'create'}, self.reporter_user,
+                                 {'latitude': 50.5, 'longitude': 4.5, 'contact_phone': wrong})
+            self.assertEqual(response.status_code, 400, wrong)
+            self.assertIn('contact_phone', response.data)
+
+    def test_a_coordinator_edits_them_and_the_trail_keeps_the_note_only(self):
+        response = self.call('patch', f'/nests/{self.nest.pk}/', {'patch': 'partial_update'}, self.coordinator_user,
+                             {'contact_phone': '081 23 45 67', 'private_comments': 'Rappelé, RDV jeudi'},
+                             pk=self.nest.pk)
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['contact_phone'], '081 23 45 67')
+        event = AuditEvent.objects.filter(action='nest.updated').latest('id')
+        self.assertEqual(event.changes['private_comments'], ['Appeler après 18 h', 'Rappelé, RDV jeudi'])
+        self.assertNotIn('contact_phone', event.changes)
+        self.assertNotIn('081', str(event.changes))
+
+
 class VisitTests(NestJournalTestCase):
     def test_a_coordinator_confirms_a_nest(self):
         response = self.record(self.coordinator_user, kind='visit', outcome='active', nest_type='secondary',

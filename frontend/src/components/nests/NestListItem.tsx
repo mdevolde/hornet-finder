@@ -12,7 +12,7 @@ interface NestListItemProps {
   onLocate: (nest: Nest) => void;
   /** Opens the other actions (sheet) */
   onMore?: (nest: Nest) => void;
-  /** The main action of the row, if any (e.g. "Détruit ?") */
+  /** The main action of the row, if any (e.g. "Signaler neutralisé") */
   action?: { label: string; onClick: (nest: Nest) => void };
   highlighted?: boolean;
 }
@@ -20,7 +20,7 @@ interface NestListItemProps {
 /** What a row says under the number: when, where, how it stands. */
 function summary(nest: Nest): string {
   const parts = [nest.created_at ? formatDate(nest.created_at) : null, nest.public_place ? 'public' : 'privé'];
-  if (nest.status === 'destroyed' && nest.destroyed_at) parts.push(`détruit le ${formatDate(nest.destroyed_at)}`);
+  if (nest.status === 'destroyed' && nest.destroyed_at) parts.push(`neutralisé le ${formatDate(nest.destroyed_at)}`);
   const photos = nest.photos?.length ?? 0;
   if (photos) parts.push(`${photos} photo${photos > 1 ? 's' : ''}`);
   return parts.filter(Boolean).join(' · ');
@@ -30,7 +30,8 @@ function summary(nest: Nest): string {
 export default function NestListItem({ nest, onOpen, onLocate, onMore, action, highlighted }: NestListItemProps) {
   const thumbnail = nest.photos?.[0]?.thumbnail_url ?? null;
   return (
-    <div className={`list-group-item manager-list-item d-flex align-items-center column-gap-2 py-2 px-2${highlighted ? ' list-group-item-warning' : ''}`}>
+    // On a phone a row with a main action puts its buttons under the text, as the traps do
+    <div className={`list-group-item manager-list-item d-flex${action ? ' flex-wrap flex-sm-nowrap' : ''} align-items-center column-gap-2 py-2 px-2${highlighted ? ' list-group-item-warning' : ''}`}>
       <button
         type="button"
         className="manager-list-open btn p-0 border-0 text-start d-flex gap-2 flex-grow-1 min-w-0"

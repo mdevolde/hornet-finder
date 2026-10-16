@@ -25,7 +25,7 @@ interface NestEventModalProps {
 
 /**
  * A visit (coordinators: active, empty, another species, not found, and what
- * the nest looks like) or the destruction of a nest (when, by whom, how).
+ * the nest looks like) or the neutralisation (destruction) of a nest (when, by whom, how).
  */
 export default function NestEventModal({ onHide, nest, kind, asReporter = false, onSaved }: NestEventModalProps) {
   const dispatch = useAppDispatch();
@@ -80,7 +80,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
   };
 
   const title = isVisit ? `Vérification du nid #${nest.id}` : asReporter
-    ? `Le nid #${nest.id} a été détruit ?` : `Destruction du nid #${nest.id}`;
+    ? `Signaler le nid #${nest.id} neutralisé` : `Neutralisation du nid #${nest.id}`;
 
   return (
     <AppModal
@@ -93,7 +93,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
       footer={(
         <Button type="submit" variant="primary" disabled={saving}>
           {saving ? <Spinner animation="border" size="sm" className="me-2" /> : <i className="bi bi-check-lg me-2" aria-hidden="true" />}
-          {asReporter ? 'Oui, il a été détruit' : 'Enregistrer'}
+          {asReporter ? 'Signaler' : 'Enregistrer'}
         </Button>
       )}
     >
@@ -155,7 +155,7 @@ export default function NestEventModal({ onHide, nest, kind, asReporter = false,
           <Form.Group className="mb-3">
             <Form.Label className="d-flex align-items-center">
               Par
-              <HelpTip id="destruction-actor-help" doc="nests#destruction" title="Qui a détruit le nid">
+              <HelpTip id="destruction-actor-help" doc="nests#destruction" title="Qui a neutralisé le nid">
                 FixMyStreet : les destructeurs formés que la Région wallonne subventionne et attribue par zone, à qui
                 l&apos;on s&apos;adresse par sa plateforme. Le numéro de la demande relie le nid au dossier.
               </HelpTip>

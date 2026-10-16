@@ -42,8 +42,8 @@ const KIND_INFO: Record<NotificationKind, { icon: string; detail?: string; help:
   },
   nest_followup: {
     icon: '📍',
-    help: "Ce que devient un nid que vous avez signalé : confirmé, écarté, trouvé vide ou détruit. Rien quand c'est "
-      + 'vous qui le déclarez détruit.',
+    help: "Ce que devient un nid que vous avez signalé : confirmé, écarté, trouvé vide ou neutralisé. Rien quand c'est "
+      + 'vous qui le signalez neutralisé.',
   },
   group_message: {
     icon: '👥',

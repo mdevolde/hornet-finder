@@ -81,9 +81,9 @@ def _followup_message(nest, event):
     url = f'/nests?nest={nest.pk}'
     if event.kind == NestEvent.KIND_DESTRUCTION:
         day = timezone.localtime(event.performed_at)
-        body = f"Le nid #{nest.pk} a été détruit le {day.day} {MONTHS[day.month - 1]}. Merci !"
+        body = f"Le nid #{nest.pk} a été neutralisé le {day.day} {MONTHS[day.month - 1]}. Merci !"
         if event.details.get('date_unknown'):
-            body = f"Le nid #{nest.pk} a été détruit. Merci !"
+            body = f"Le nid #{nest.pk} a été neutralisé. Merci !"
     else:
         body = {
             NestEvent.OUTCOME_ACTIVE: f"Le nid #{nest.pk} est confirmé : c'est bien un nid de frelons asiatiques.",

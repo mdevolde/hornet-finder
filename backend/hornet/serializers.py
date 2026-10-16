@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import timedelta
 from typing import Optional
 from django.db.models import Max
@@ -114,6 +115,9 @@ class NestPhotoSerializer(serializers.ModelSerializer):
 
 # A phone's clock may run slightly ahead of the server's
 DESTROYED_AT_CLOCK_SKEW = timedelta(minutes=5)
+# A phone number as people type it: digits, an optional leading +, spaces and the usual separators;
+# 8 to 15 digits (E.164 allows 15; a Belgian number has 9 after its 0)
+PHONE_PATTERN = re.compile(r'^\+?[0-9 ./()-]+$')
 
 
 class NestEventSerializer(serializers.ModelSerializer):
@@ -183,7 +187,8 @@ class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
         model = Nest
         fields = ['id', 'longitude', 'latitude', 'public_place', 'address', 'status', 'destroyed', 'destroyed_at',
                   'nest_type', 'height_class', 'size_class', 'created_at', 'created_by', 'comments',
-                  'last_event_at', 'archived', 'archived_at', 'photos', 'state']
+                  'contact_phone', 'private_comments', 'last_event_at', 'archived', 'archived_at', 'photos',
+                  'state']
         # The reporter is the requester, set by the view: never a form field. The
         # status follows the journal (POST /nests/<id>/events/)
         read_only_fields = ['id', 'status', 'created_at', 'created_by', 'last_event_at', 'archived', 'archived_at']
@@ -201,6 +206,9 @@ class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
             data['created_by'] = None
         # What the requester may do, so the UI does not have to redo the rules
         request = self.context.get('request')
+        if request is None or not nest_perms.can_see_contact(request, instance):
+            data.pop('contact_phone', None)
+            data.pop('private_comments', None)
         if request is not None:
             data['permissions'] = {
                 'update': nest_perms.can_edit_nest(request, instance),
@@ -225,6 +233,18 @@ class NestSerializer(GPSValidationMixin, serializers.ModelSerializer):
             raise serializers.ValidationError("Address must be 255 characters or less.")
         
         return value
+
+    def validate_contact_phone(self, value: str) -> str:
+        value = (value or '').strip()
+        if not value:
+            return ''
+        digits = sum(char.isdigit() for char in value)
+        if not PHONE_PATTERN.match(value) or not 8 <= digits <= 15:
+            raise serializers.ValidationError("Numéro de téléphone non valide.")
+        return value
+
+    def validate_private_comments(self, value: str) -> str:
+        return (value or '').strip()
 
     def validate_destroyed_at(self, value):
         if value is not None and value > timezone.now() + DESTROYED_AT_CLOCK_SKEW:

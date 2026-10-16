@@ -27,7 +27,7 @@ const LIST_PATH = '/nests/list';
 
 const STATUS_FILTERS: { value: NestStatus | 'open'; label: string }[] = [
   { value: 'open', label: 'En cours' },
-  { value: 'destroyed', label: 'Détruits' },
+  { value: 'destroyed', label: 'Neutralisés' },
   { value: 'rejected', label: 'Écartés' },
   { value: 'abandoned', label: 'Abandonnés' },
 ];
@@ -40,7 +40,7 @@ const ORDERINGS: { value: NestOrdering; label: string }[] = [
 /** Sections of "À traiter", in this order; `mine` keeps the open nests only there */
 const TODO_SECTIONS: { key: keyof NestTodo; title: string }[] = [
   { key: 'to_verify', title: 'À vérifier' },
-  { key: 'confirmed', title: 'Confirmés, en attente de destruction' },
+  { key: 'confirmed', title: 'Confirmés, à neutraliser' },
   { key: 'near_apiaries', title: 'Près de mes ruchers' },
   { key: 'mine', title: 'Mes signalements en cours' },
 ];
@@ -177,7 +177,7 @@ export default function Nests() {
       return { label: 'Vérifier', onClick: (item: Nest) => record(item, 'visit') };
     }
     if (nest.permissions?.destroy && isOpenStatus(nest.status)) {
-      return { label: nest.permissions.visit ? 'Détruit' : 'Détruit ?', onClick: (item: Nest) => record(item, 'destruction') };
+      return { label: nest.permissions.visit ? 'Neutraliser' : 'Signaler neutralisé', onClick: (item: Nest) => record(item, 'destruction') };
     }
     return undefined;
   };
@@ -273,9 +273,9 @@ export default function Nests() {
                     <span className="d-inline-flex align-items-center">
                       Rien à traiter.
                       <HelpTip id="nests-todo-empty-help" doc="nests#module" title="À traiter">
-                        Un nid apparaît ici quand il attend quelque chose de vous : une vérification ou sa destruction
+                        Un nid apparaît ici quand il attend quelque chose de vous : une vérification ou sa neutralisation
                         (coordinateurs), parce qu&apos;il est à moins de 1 km d&apos;un de vos ruchers, ou parce que vous
-                        l&apos;avez signalé et qu&apos;il n&apos;est pas encore détruit.
+                        l&apos;avez signalé et qu&apos;il n&apos;est pas encore neutralisé.
                       </HelpTip>
                     </span>
                   </div>

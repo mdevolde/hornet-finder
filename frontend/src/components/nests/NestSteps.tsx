@@ -2,7 +2,7 @@ import type { Nest } from '../../store/store';
 import { formatDate } from '../../utils/format';
 
 /**
- * Where a nest stands among the three steps: reported, confirmed, destroyed.
+ * Where a nest stands among the three steps: reported, confirmed, neutralised.
  * Nothing for a rejected or abandoned nest: its badge says it all.
  */
 export default function NestSteps({ nest }: { nest: Nest }) {
@@ -12,7 +12,7 @@ export default function NestSteps({ nest }: { nest: Nest }) {
   const steps = [
     { key: 'reported', label: 'Signalé', done: true, date: nest.created_at },
     { key: 'confirmed', label: 'Confirmé', done: status === 'confirmed' || Boolean(visit), date: visit?.performed_at },
-    { key: 'destroyed', label: 'Détruit', done: status === 'destroyed', date: nest.destroyed_at },
+    { key: 'destroyed', label: 'Neutralisé', done: status === 'destroyed', date: nest.destroyed_at },
   ];
   return (
     <ol className="nest-steps" aria-label="Avancement">
