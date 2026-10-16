@@ -10,6 +10,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+### Changed
+- Privacy policy: new article 9 "Cookies et stockage local" (what the site stores, why, how long; no tracking cookie, so no consent banner) and the map services contacted (OpenStreetMap, Esri, Nominatim, ipify) listed in article 5. The home footer link now reads "Confidentialité et cookies".
+
 ### Added
 - Nest report: a phone number to call the reporter back and a comment for the coordinators,
   both optional, read only by the nest coordinators and the reporter, never on the public

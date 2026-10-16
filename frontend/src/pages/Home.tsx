@@ -75,7 +75,7 @@ export default function Home() {
           <div className="text-muted mb-1">
             Une initiative de <b>Vedrin s'abeille</b> pour la protection de la biodiversité locale
           </div>
-          <Link to="/privacy-policy" className="text-muted me-3">Politique de confidentialité</Link>
+          <Link to="/privacy-policy" className="text-muted me-3">Confidentialité et cookies</Link>
           <Link to="/data-deletion" className="text-muted">Suppression des données</Link>
         </footer>
       </Container>
