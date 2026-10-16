@@ -11,6 +11,7 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ## [Unreleased]
 
 ### Fixed
+- Dark mode, iOS and Android: an off switch was hard to tell from an on one (Bootstrap's dark rule dimmed the off knob). The off state now has an opaque white knob and a lighter track (iOS) or a restated outline (Material), in both palettes.
 - Nests: a nest that belongs to several "À traiter" sections (to verify, near one's apiaries, one's own report) was counted once per section in the badges and listed several times. It now counts once and appears once, in the most urgent section.
 
 ## [1.5.0] - 2026-10-16
