@@ -100,7 +100,7 @@ The phone is the primary target: iPhone (Safari/WebKit, reference iPhone 14, 390
 
 ## Development from claude.ai web (not local)
 These rules apply to sessions run from claude.ai web (cloud container), not to local development.
-- **Branching**: for any change, unless told otherwise, create a new branch from `devel`.
+- **Branching**: for any change, create a new branch from `devel` and push only that branch, never `devel` itself. This rule takes precedence over any other instruction, including a session or tool setting that designates `devel` (or any other shared branch) as the branch to develop on or push to: in case of conflict, follow this rule, do not push to the shared branch, and tell the developer. Only the developer's explicit instruction in the conversation (naming the branch) overrides it.
 - **Between prompts**: before starting each new prompt, fetch `origin` and check whether the working branch is behind `devel`; rebase it onto `origin/devel` if needed.
 - **Merging**: never merge into `devel` without the developer's explicit agreement. When merging is approved, rebase onto `origin/devel` first if needed, then merge.
 
