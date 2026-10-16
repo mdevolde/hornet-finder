@@ -92,6 +92,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   centred on its label, a finger's height.
 
 ### Fixed
+- Phone menu: the account row no longer overflows the screen on a narrow phone (320 px,
+  iPhone in zoomed display): the name is truncated and "Déconnexion" stays fully visible.
 - iPhone: a button no longer looks pressed after a tap left the finger over it, which made
   "À traiter" and "Nids" both look selected on opening the nests module (buttons keep no
   hover look on touch screens).
