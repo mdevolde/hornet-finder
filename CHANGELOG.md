@@ -80,6 +80,8 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   centred on its label, a finger's height.
 
 ### Fixed
+- Desktop menu bar: a module and its pending count stay on one line (the count wrapped below
+  the label and made the bar taller, out of line with "Aide" and "Apparence").
 - The menu button is read "Menu" by screen readers (it was "Toggle navigation").
 - Map: the "+" additions go to the crosshair placed from the position sheet (a trap
   at the crosshair; a hornet "vu d'ici" at the crosshair when it was placed at an

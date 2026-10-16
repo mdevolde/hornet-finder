@@ -152,6 +152,13 @@ button.module-card {
   }
 }
 
+/* A module of the menu: its label and its pending count on one line, in the bar as in the phone menu */
+.navbar-module-link {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
 .min-w-0 {
   min-width: 0;
 }
