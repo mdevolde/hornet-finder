@@ -10,6 +10,9 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 
 ## [Unreleased]
 
+### Security
+- Frontend dependencies: `npm audit fix` updates the transitive `brace-expansion` and `source-map-js` (high), `fast-uri` (moderate) and `serialize-javascript` (low) in the lockfile; `npm audit` reports 0 vulnerabilities.
+
 ### Changed
 - Privacy policy: new article 9 "Cookies et stockage local" (what the site stores, why, how long; no tracking cookie, so no consent banner) and the map services contacted (OpenStreetMap, Esri, Nominatim, ipify) listed in article 5. The home footer link now reads "Confidentialité et cookies".
 
