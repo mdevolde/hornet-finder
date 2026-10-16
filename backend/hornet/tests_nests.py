@@ -16,6 +16,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from audit.models import AuditEvent
 from .models import Apiary, Nest, NestEvent, NestPhoto, User
 from .tests import FakeTrapUser, _image_file
+from .pending import pending_view
 from .views import NestViewSet
 
 _MEDIA = Path(tempfile.mkdtemp(prefix='nest-journal-tests-'))
@@ -289,6 +290,20 @@ class ListTests(NestJournalTestCase):
         response = self.get(self.beekeeper_user, '/nests/todo/', 'todo')
         self.assertEqual(sorted(n['id'] for n in response.data['near_apiaries']), sorted([self.nest.pk, self.other.pk]))
         self.assertNotIn('to_verify', response.data)
+
+    def pending(self, user):
+        request = self.factory.get('/api/pending/')
+        force_authenticate(request, user=user)
+        return pending_view(request).data['nests']
+
+    def test_the_nests_badge_counts_what_waits(self):
+        # The coordinator: one to verify, one to destroy; their own report only waits
+        self.assertEqual(self.pending(self.coordinator_user), 2)
+        Apiary.objects.create(latitude=50.505, longitude=4.5, owner=self.beekeeper)
+        self.assertEqual(self.pending(self.beekeeper_user), 2)
+        # A reporter has nothing to do but wait
+        self.assertEqual(self.pending(self.reporter_user), 0)
+        self.assertEqual(self.pending(self.hunter_user), 0)
 
     def test_todo_of_a_trapper(self):
         response = self.get(self.reporter_user, '/nests/todo/', 'todo')

@@ -15,7 +15,7 @@ interface ModuleCardProps {
   href?: string;
   onClick?: () => void;
   badge?: string;
-  /** Number of things waiting (reminders due), shown as a red count in the corner */
+  /** Number of things waiting for the user in the module, shown as a red count in the corner (`utils/pending.ts`) */
   count?: number;
 }
 

@@ -1736,6 +1736,18 @@ html[data-platform="material"] .form-switch .form-check-input:checked {
   min-width: 1.5rem;
 }
 
+/* Something waits in a module (utils/pending.ts): a dot on the menu button, which does not move */
+.navbar-pending-dot {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--bs-danger);
+  box-shadow: 0 0 0 2px var(--nav-bg, var(--bs-dark));
+}
+
 /* A reminder of the "À relever" list */
 .due-item .due-icon {
   width: 40px;

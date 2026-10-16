@@ -19,6 +19,7 @@ import {
   type ManagedTrapsQuery, type Trap, type TrapEventKind, type TrapOrdering, type TrapScope,
 } from '../store/store';
 import { fetchDue, type DueItem } from '../utils/dueApi';
+import { refreshPending } from '../utils/pending';
 import { signInFromCurrentPage } from '../utils/authRedirect';
 import { ACTION_ICONS } from '../utils/icons';
 import { isBeekeeperGroup, memberGroups } from '../utils/groups';
@@ -147,7 +148,10 @@ export default function Traps() {
   const [due, setDue] = useState<DueItem[] | null>(null);
   const [dueError, setDueError] = useState<string | null>(null);
   const [dueVersion, setDueVersion] = useState(0);
-  const refreshDue = () => setDueVersion((version) => version + 1);
+  const refreshDue = () => {
+    setDueVersion((version) => version + 1);
+    refreshPending();
+  };
   useEffect(() => {
     if (!auth.isAuthenticated) return;
     let cancelled = false;

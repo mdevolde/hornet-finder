@@ -20,6 +20,7 @@ import {
   fetchManagedNests, fetchNestTodo, type ManagedNestsQuery, type NestOrdering, type NestScope, type NestTodo,
 } from '../utils/nestsApi';
 import { isOpenStatus } from '../utils/nestStatus';
+import { refreshPending } from '../utils/pending';
 
 const TODO_PATH = '/nests';
 const LIST_PATH = '/nests/list';
@@ -69,7 +70,10 @@ export default function Nests() {
   const [todo, setTodo] = useState<NestTodo | null>(null);
   const [todoError, setTodoError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
-  const reload = () => setVersion((value) => value + 1);
+  const reload = () => {
+    setVersion((value) => value + 1);
+    refreshPending();
+  };
   useEffect(() => {
     if (!auth.isAuthenticated) return;
     let cancelled = false;

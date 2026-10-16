@@ -114,6 +114,7 @@ NOT_AUDITED = {
 # Views outside the routers, by URL name
 PLAIN_VIEWS = {
     'media': "read",
+    'pending': "read",
     'my-avatar': "the user's own profile photo, not a business action",
     'tag-sheet-pdf': "read",
     'stats-catalogue': "read",

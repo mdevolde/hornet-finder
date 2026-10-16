@@ -11,6 +11,11 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 ## [Unreleased]
 
 ### Added
+- Pending badges for every module: the nests module now shows, like the traps module, a
+  red count on its landing tile when something waits for the user (nests to verify or to
+  destroy for the coordinators, active nests near one's apiaries). The same counts appear
+  on the menu entries, and a red dot on the menu button. One request serves them all
+  (`GET /api/pending/`), refreshed after a reading or a nest action.
 - Nests module, first part of its redesign (`doc/mockups/nests-redesign.html`): a nest has a
   journal and a status, reported, confirmed, destroyed, rejected (another species, not
   found) or abandoned (empty). The module opens on "À traiter" (nests to verify or to destroy
@@ -75,6 +80,7 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
   centred on its label, a finger's height.
 
 ### Fixed
+- The menu button is read "Menu" by screen readers (it was "Toggle navigation").
 - Map: the "+" additions go to the crosshair placed from the position sheet (a trap
   at the crosshair; a hornet "vu d'ici" at the crosshair when it was placed at an
   address, otherwise at the GPS position), instead of the map centre or the GPS.

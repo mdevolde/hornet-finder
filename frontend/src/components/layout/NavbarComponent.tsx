@@ -1,4 +1,4 @@
-import { Navbar, Nav, Button, Container, Spinner, Breadcrumb } from 'react-bootstrap';
+import { Navbar, Nav, Button, Container, Spinner, Breadcrumb, Badge } from 'react-bootstrap';
 import { useAuth } from 'react-oidc-context';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +15,7 @@ import { signInFromCurrentPage } from '../../utils/authRedirect';
 import { getBreadcrumbs } from '../../utils/breadcrumbs';
 import { visibleModules } from '../../config/modules';
 import { useUserPermissions } from '../../hooks/useUserPermissions';
+import { usePendingCounts } from '../../hooks/usePendingCounts';
 import { UserAvatar } from '../common';
 import { useAvatarUrl } from '../../hooks/useAvatarUrl';
 import { APP_VERSION, IS_RELEASE } from '../../utils/version';
@@ -40,6 +41,9 @@ export default function NavbarComponent() {
   const crumbs = getBreadcrumbs(location.pathname);
   const { roles } = useUserPermissions();
   const modules = visibleModules(roles).filter((module) => module.path);
+  // What waits in each module: a count on its menu entry, a dot on the menu button
+  const pending = usePendingCounts();
+  const waiting = modules.reduce((total, module) => total + (pending[module.id] ?? 0), 0);
   const { available: installAvailable } = useInstallState();
   const [showUserModal, setShowUserModal] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
@@ -141,13 +145,26 @@ export default function NavbarComponent() {
           )}
         </div>
 
-        <Navbar.Toggle aria-controls="basic-navbar-nav" aria-label="Menu" className="flex-shrink-0" />
+        <Navbar.Toggle
+          aria-controls="basic-navbar-nav"
+          // `label`, not `aria-label`: react-bootstrap sets the latter from it
+          label={waiting ? `Menu, ${waiting} en attente` : 'Menu'}
+          className="flex-shrink-0 position-relative"
+        >
+          <span className="navbar-toggler-icon" />
+          {waiting > 0 && <span className="navbar-pending-dot" aria-hidden="true" />}
+        </Navbar.Toggle>
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             {modules.map((module) => (
               <Nav.Link key={module.id} as={NavLink} to={module.landing ?? module.path!} onClick={close} className="navbar-module-link">
                 <i className={`bi ${module.icon} me-2 d-lg-none module-icon`} data-tone={module.tone} aria-hidden="true" />
                 {module.shortTitle}
+                {(pending[module.id] ?? 0) > 0 && (
+                  <Badge pill bg="danger" className="ms-2" aria-label={`${pending[module.id]} en attente`}>
+                    {pending[module.id]}
+                  </Badge>
+                )}
               </Nav.Link>
             ))}
             <Nav.Link
