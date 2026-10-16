@@ -14,6 +14,7 @@ Write entries under `[Unreleased]` as the work is done, in the sections `Added`,
 - Frontend dependencies: `npm audit fix` updates the transitive `brace-expansion` and `source-map-js` (high), `fast-uri` (moderate) and `serialize-javascript` (low) in the lockfile; `npm audit` reports 0 vulnerabilities.
 
 ### Changed
+- Frontend dependencies: React and react-dom 19.3.1, `@types/react` and `@types/react-dom` 19.3.0, react-router-dom 7.18.4, Vite 8.3.4.
 - Privacy policy: new article 9 "Cookies et stockage local" (what the site stores, why, how long; no tracking cookie, so no consent banner) and the map services contacted (OpenStreetMap, Esri, Nominatim, ipify) listed in article 5. The home footer link now reads "Confidentialité et cookies".
 
 ### Added
